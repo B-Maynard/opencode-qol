@@ -1,6 +1,9 @@
 import { Context } from "effect"
 
 const opencodeOrigin = /^https:\/\/([a-z0-9-]+\.)*opencode\.ai$/
+// RFC 1918 private ranges (10/8, 172.16/12, 192.168/16)
+const privateIp =
+  /^https?:\/\/(10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})/
 
 export type CorsOptions = { readonly cors?: ReadonlyArray<string> }
 
@@ -16,6 +19,7 @@ export function isAllowedCorsOrigin(input: string | undefined, opts?: CorsOption
   if (input === "tauri://localhost" || input === "http://tauri.localhost" || input === "https://tauri.localhost")
     return true
   if (opencodeOrigin.test(input)) return true
+  if (privateIp.test(input)) return true
   return opts?.cors?.includes(input) ?? false
 }
 

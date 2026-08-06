@@ -9,7 +9,7 @@ import { Skill } from "@/skill"
 import { Effect } from "effect"
 import { HttpApiBuilder } from "effect/unstable/httpapi"
 import { InstanceHttpApi } from "../api"
-import { ApiVcsApplyError } from "../groups/instance"
+import { ApiVcsApplyError, ApiVcsCheckoutError, ApiVcsCommitError, ApiVcsPushError } from "../groups/instance"
 import { markInstanceForDisposal } from "../lifecycle"
 
 export const instanceHandlers = HttpApiBuilder.group(InstanceHttpApi, "instance", (handlers) =>
@@ -73,6 +73,67 @@ export const instanceHandlers = HttpApiBuilder.group(InstanceHttpApi, "instance"
       )
     })
 
+    const commitVcs = Effect.fn("InstanceHttpApi.vcsCommit")(function* (ctx: { payload: Vcs.CommitInput }) {
+      return yield* vcs.commit(ctx.payload).pipe(
+        Effect.mapError(
+          (error) =>
+            new ApiVcsCommitError({
+              name: "VcsCommitError",
+              data: {
+                message: error.message,
+                reason: error.reason,
+              },
+            }),
+        ),
+      )
+    })
+
+    const stageVcs = Effect.fn("InstanceHttpApi.vcsStage")(function* (ctx: { payload: Vcs.StageInput }) {
+      return yield* vcs.stage(ctx.payload)
+    })
+
+    const unstageVcs = Effect.fn("InstanceHttpApi.vcsUnstage")(function* (ctx: { payload: Vcs.UnstageInput }) {
+      return yield* vcs.unstage(ctx.payload)
+    })
+
+    const getVcsStaged = Effect.fn("InstanceHttpApi.vcsStaged")(function* () {
+      return yield* vcs.staged()
+    })
+
+    const pushVcs = Effect.fn("InstanceHttpApi.vcsPush")(function* (ctx: { payload: Vcs.PushInput }) {
+      return yield* vcs.push(ctx.payload).pipe(
+        Effect.mapError(
+          (error) =>
+            new ApiVcsPushError({
+              name: "VcsPushError",
+              data: {
+                message: error.message,
+                reason: error.reason,
+              },
+            }),
+        ),
+      )
+    })
+
+    const getVcsBranches = Effect.fn("InstanceHttpApi.vcsBranches")(function* () {
+      return yield* vcs.branches()
+    })
+
+    const checkoutVcs = Effect.fn("InstanceHttpApi.vcsCheckout")(function* (ctx: { payload: Vcs.CheckoutInput }) {
+      return yield* vcs.checkout(ctx.payload).pipe(
+        Effect.mapError(
+          (error) =>
+            new ApiVcsCheckoutError({
+              name: "VcsCheckoutError",
+              data: {
+                message: error.message,
+                reason: error.reason,
+              },
+            }),
+        ),
+      )
+    })
+
     const getCommand = Effect.fn("InstanceHttpApi.command")(function* () {
       return yield* command.list()
     })
@@ -101,6 +162,13 @@ export const instanceHandlers = HttpApiBuilder.group(InstanceHttpApi, "instance"
       .handle("vcsDiff", getVcsDiff)
       .handle("vcsDiffRaw", getVcsDiffRaw)
       .handle("vcsApply", applyVcs)
+      .handle("vcsCommit", commitVcs)
+      .handle("vcsStage", stageVcs)
+      .handle("vcsUnstage", unstageVcs)
+      .handle("vcsStaged", getVcsStaged)
+      .handle("vcsPush", pushVcs)
+      .handle("vcsBranches", getVcsBranches)
+      .handle("vcsCheckout", checkoutVcs)
       .handle("command", getCommand)
       .handle("agent", getAgent)
       .handle("skill", getSkill)

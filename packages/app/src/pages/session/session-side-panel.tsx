@@ -1,4 +1,4 @@
-import { For, Match, Show, Switch, createEffect, createMemo, onCleanup, type JSX } from "solid-js"
+import { For, Match, Show, Switch, createEffect, createMemo, on, onCleanup, type JSX } from "solid-js"
 import { createStore } from "solid-js/store"
 import { createMediaQuery } from "@solid-primitives/media"
 import { DragDropProvider as DndKitProvider, PointerSensor } from "@dnd-kit/solid"
@@ -29,6 +29,7 @@ import { ConstrainDragYAxis, getDraggableId } from "@/utils/solid-dnd"
 import { useDialog } from "@opencode-ai/ui/context/dialog"
 
 import FileTree from "@/components/file-tree"
+import { GitPanel } from "@/components/git-panel"
 import { normalizeFileTreeV2Path } from "@/components/file-tree-v2-model"
 import { SessionContextUsage } from "@/components/session-context-usage"
 
@@ -81,6 +82,9 @@ export function SessionSidePanel(props: {
   reviewSnap: boolean
   size: Sizing
   stacked?: boolean
+  staged: () => string[]
+  onStage: (files: string[]) => void
+  onUnstage: (files: string[]) => void
 }) {
   const layout = useLayout()
   const settings = useSettings()
@@ -191,9 +195,23 @@ export function SessionSidePanel(props: {
   const fileTreeTab = () => layout.fileTree.tab()
 
   const setFileTreeTabValue = (value: string) => {
-    if (value !== "changes" && value !== "all") return
+    if (value !== "changes" && value !== "all" && value !== "git") return
     layout.fileTree.setTab(value)
   }
+
+  // V1 only: open the Git tab by default when programming mode is enabled,
+  // unless the user has already picked a different tab. The setting hydrates
+  // asynchronously, so watch it reactively instead of reading once on mount.
+  // ponytail: only "changes"/"all" mean "still default"; anything else is a
+  // user choice we leave alone.
+  createEffect(
+    on(settings.general.programmingMode, (enabled) => {
+      if (!enabled) return
+      const tab = fileTreeTab()
+      if (tab !== "changes" && tab !== "all") return
+      layout.fileTree.setTab("git")
+    }),
+  )
 
   const showAllFiles = () => {
     if (fileTreeTab() !== "changes") return
@@ -745,7 +763,13 @@ export function SessionSidePanel(props: {
                               state={props.fileBrowserState!}
                               onSelect={(path) => previewTab(file.tab(path))}
                               onSelectPermanent={(path) => openTab(file.tab(path))}
+                              onEdit={(path) => openTab(file.editTab(path))}
+                              onSelectFile={props.focusReviewDiff}
+                              diffs={diffs}
                               filterRef={(element) => (fileFilter = element)}
+                              staged={props.staged}
+                              onStage={props.onStage}
+                              onUnstage={props.onUnstage}
                             />
                           </div>
                         </Show>
@@ -778,26 +802,31 @@ export function SessionSidePanel(props: {
                     data-scope="filetree"
                   >
                     <Tabs.List>
-                      <Tabs.Trigger value="changes" class="flex-1" classes={{ button: "w-full" }}>
-                        <Show
-                          when={settings.general.newLayoutDesigns()}
-                          fallback={
-                            <>
-                              {props.reviewCount()}{" "}
-                              {language.t(
-                                props.reviewCount() === 1 ? "session.review.change.one" : "session.review.change.other",
-                              )}
-                            </>
-                          }
-                        >
-                          {language.t("session.review.filesChanged", { count: props.reviewCount() })}
-                        </Show>
-                      </Tabs.Trigger>
-                      <Tabs.Trigger value="all" class="flex-1" classes={{ button: "w-full" }}>
-                        {language.t("session.files.all")}
+                      <Show when={!settings.general.programmingMode()}>
+                        <Tabs.Trigger value="changes" class="flex-1" classes={{ button: "w-full" }}>
+                          <Show
+                            when={settings.general.newLayoutDesigns()}
+                            fallback={
+                              <>
+                                {props.reviewCount()}{" "}
+                                {language.t(
+                                  props.reviewCount() === 1 ? "session.review.change.one" : "session.review.change.other",
+                                )}
+                              </>
+                            }
+                          >
+                            {language.t("session.review.filesChanged", { count: props.reviewCount() })}
+                          </Show>
+                        </Tabs.Trigger>
+                        <Tabs.Trigger value="all" class="flex-1" classes={{ button: "w-full" }}>
+                          {language.t("session.files.all")}
+                        </Tabs.Trigger>
+                      </Show>
+                      <Tabs.Trigger value="git" class="flex-1" classes={{ button: "w-full" }}>
+                        {language.t("session.git.tab")}
                       </Tabs.Trigger>
                     </Tabs.List>
-                    <Show when={fileTreeTab() === "changes"}>
+                    <Show when={fileTreeTab() === "changes" && !settings.general.programmingMode()}>
                       <Tabs.Content value="changes" class="bg-background-stronger px-3 py-0">
                         <Switch>
                           <Match when={props.hasReview() || !props.diffsReady()}>
@@ -824,7 +853,7 @@ export function SessionSidePanel(props: {
                         </Switch>
                       </Tabs.Content>
                     </Show>
-                    <Show when={fileTreeTab() === "all"}>
+                    <Show when={fileTreeTab() === "all" && !settings.general.programmingMode()}>
                       <Tabs.Content value="all" class="bg-background-stronger px-3 py-0">
                         <Switch>
                           <Match when={nofiles()}>{empty(language.t("session.files.empty"))}</Match>
@@ -838,6 +867,17 @@ export function SessionSidePanel(props: {
                             />
                           </Match>
                         </Switch>
+                      </Tabs.Content>
+                    </Show>
+                    <Show when={fileTreeTab() === "git"}>
+                      <Tabs.Content value="git" class="bg-background-stronger px-3 py-0">
+                        <GitPanel
+                          files={diffs}
+                          onSelectFile={props.focusReviewDiff}
+                          staged={props.staged}
+                          onStage={props.onStage}
+                          onUnstage={props.onUnstage}
+                        />
                       </Tabs.Content>
                     </Show>
                   </Tabs>

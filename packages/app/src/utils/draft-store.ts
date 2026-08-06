@@ -22,10 +22,19 @@ function blobUrl(id: string, blob: Blob) {
 }
 
 async function blobID(blob: Blob) {
-  const id = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", await blob.arrayBuffer())))
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("")
-  return id
+  const bytes = new Uint8Array(await blob.arrayBuffer())
+  const subtle = globalThis.crypto?.subtle
+  if (subtle) {
+    const digest = new Uint8Array(await subtle.digest("SHA-256", bytes))
+    return Array.from(digest)
+      .map((byte) => byte.toString(16).padStart(2, "0"))
+      .join("")
+  }
+  // ponytail: crypto.subtle is unavailable in non-secure contexts (http over
+  // LAN/IP), so fall back to a stable djb2 hash so image paste still works.
+  let hash = 5381
+  for (const byte of bytes) hash = ((hash << 5) + hash + byte) >>> 0
+  return hash.toString(16).padStart(8, "0")
 }
 
 export async function createBlobReference(blob: Blob): Promise<BlobReference> {

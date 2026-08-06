@@ -2300,6 +2300,18 @@ export type File = {
   status: "added" | "deleted" | "modified"
 }
 
+export type FileWriteResult = {
+  written: boolean
+}
+
+export type FileWriteError = {
+  name: "FileWriteError"
+  data: {
+    message: string
+    reason: "path-out-of-scope" | "not-a-file" | "binary" | "too-large"
+  }
+}
+
 export type Path = {
   home: string
   state: string
@@ -2333,6 +2345,46 @@ export type VcsApplyError = {
   data: {
     message: string
     reason: "non-git" | "not-clean"
+  }
+}
+
+export type VcsCommitError = {
+  name: "VcsCommitError"
+  data: {
+    message: string
+    reason: "non-git" | "nothing-to-commit"
+  }
+}
+
+export type VcsStageError = {
+  _tag: "VcsStageError"
+  message: string
+}
+
+export type VcsUnstageError = {
+  _tag: "VcsUnstageError"
+  message: string
+}
+
+export type VcsPushError = {
+  name: "VcsPushError"
+  data: {
+    message: string
+    reason: "non-git" | "push-failed"
+  }
+}
+
+export type VcsBranchInfo = {
+  name: string
+  current: boolean
+  remote?: string
+}
+
+export type VcsCheckoutError = {
+  name: "VcsCheckoutError"
+  data: {
+    message: string
+    reason: "non-git" | "checkout-failed" | "branch-exists"
   }
 }
 
@@ -8081,6 +8133,37 @@ export type FileStatusResponses = {
 
 export type FileStatusResponse = FileStatusResponses[keyof FileStatusResponses]
 
+export type FileWriteData = {
+  body?: {
+    path: string
+    content: string
+  }
+  path?: never
+  query?: {
+    directory?: string
+    workspace?: string
+  }
+  url: "/file/write"
+}
+
+export type FileWriteErrors = {
+  /**
+   * FileWriteError | InvalidRequestError
+   */
+  400: FileWriteError | InvalidRequestError
+}
+
+export type FileWriteError2 = FileWriteErrors[keyof FileWriteErrors]
+
+export type FileWriteResponses = {
+  /**
+   * File written
+   */
+  200: FileWriteResult
+}
+
+export type FileWriteResponse = FileWriteResponses[keyof FileWriteResponses]
+
 export type InstanceDisposeData = {
   body?: never
   path?: never
@@ -8282,6 +8365,232 @@ export type VcsApplyResponses = {
 }
 
 export type VcsApplyResponse = VcsApplyResponses[keyof VcsApplyResponses]
+
+export type VcsCommitData = {
+  body?: {
+    message: string
+    files?: Array<string>
+  }
+  path?: never
+  query?: {
+    directory?: string
+    workspace?: string
+  }
+  url: "/vcs/commit"
+}
+
+export type VcsCommitErrors = {
+  /**
+   * VcsCommitError | InvalidRequestError
+   */
+  400: VcsCommitError | InvalidRequestError
+}
+
+export type VcsCommitError2 = VcsCommitErrors[keyof VcsCommitErrors]
+
+export type VcsCommitResponses = {
+  /**
+   * VCS commit created
+   */
+  200: {
+    committed: boolean
+  }
+}
+
+export type VcsCommitResponse = VcsCommitResponses[keyof VcsCommitResponses]
+
+export type VcsStageData = {
+  body?: {
+    files?: Array<string>
+  }
+  path?: never
+  query?: {
+    directory?: string
+    workspace?: string
+  }
+  url: "/vcs/stage"
+}
+
+export type VcsStageErrors = {
+  /**
+   * Bad request
+   */
+  400: BadRequestError
+  /**
+   * VcsStageError
+   */
+  500: VcsStageError
+}
+
+export type VcsStageError2 = VcsStageErrors[keyof VcsStageErrors]
+
+export type VcsStageResponses = {
+  /**
+   * VCS files staged
+   */
+  200: {
+    files: Array<string>
+  }
+}
+
+export type VcsStageResponse = VcsStageResponses[keyof VcsStageResponses]
+
+export type VcsUnstageData = {
+  body?: {
+    files?: Array<string>
+  }
+  path?: never
+  query?: {
+    directory?: string
+    workspace?: string
+  }
+  url: "/vcs/unstage"
+}
+
+export type VcsUnstageErrors = {
+  /**
+   * Bad request
+   */
+  400: BadRequestError
+  /**
+   * VcsUnstageError
+   */
+  500: VcsUnstageError
+}
+
+export type VcsUnstageError2 = VcsUnstageErrors[keyof VcsUnstageErrors]
+
+export type VcsUnstageResponses = {
+  /**
+   * VCS files unstaged
+   */
+  200: {
+    files: Array<string>
+  }
+}
+
+export type VcsUnstageResponse = VcsUnstageResponses[keyof VcsUnstageResponses]
+
+export type VcsStagedData = {
+  body?: never
+  path?: never
+  query?: {
+    directory?: string
+    workspace?: string
+  }
+  url: "/vcs/staged"
+}
+
+export type VcsStagedErrors = {
+  /**
+   * Bad request
+   */
+  400: BadRequestError
+}
+
+export type VcsStagedError = VcsStagedErrors[keyof VcsStagedErrors]
+
+export type VcsStagedResponses = {
+  /**
+   * VCS staged files
+   */
+  200: Array<string>
+}
+
+export type VcsStagedResponse = VcsStagedResponses[keyof VcsStagedResponses]
+
+export type VcsPushData = {
+  body?: {
+    remote?: string
+    branch?: string
+  }
+  path?: never
+  query?: {
+    directory?: string
+    workspace?: string
+  }
+  url: "/vcs/push"
+}
+
+export type VcsPushErrors = {
+  /**
+   * VcsPushError | InvalidRequestError
+   */
+  400: VcsPushError | InvalidRequestError
+}
+
+export type VcsPushError2 = VcsPushErrors[keyof VcsPushErrors]
+
+export type VcsPushResponses = {
+  /**
+   * VCS pushed
+   */
+  200: {
+    pushed: boolean
+  }
+}
+
+export type VcsPushResponse = VcsPushResponses[keyof VcsPushResponses]
+
+export type VcsBranchesData = {
+  body?: never
+  path?: never
+  query?: {
+    directory?: string
+    workspace?: string
+  }
+  url: "/vcs/branches"
+}
+
+export type VcsBranchesErrors = {
+  /**
+   * Bad request
+   */
+  400: BadRequestError
+}
+
+export type VcsBranchesError = VcsBranchesErrors[keyof VcsBranchesErrors]
+
+export type VcsBranchesResponses = {
+  /**
+   * VCS branches
+   */
+  200: Array<VcsBranchInfo>
+}
+
+export type VcsBranchesResponse = VcsBranchesResponses[keyof VcsBranchesResponses]
+
+export type VcsCheckoutData = {
+  body?: {
+    branch: string
+    create?: boolean
+    base?: string
+  }
+  path?: never
+  query?: {
+    directory?: string
+    workspace?: string
+  }
+  url: "/vcs/checkout"
+}
+
+export type VcsCheckoutErrors = {
+  /**
+   * VcsCheckoutError | InvalidRequestError
+   */
+  400: VcsCheckoutError | InvalidRequestError
+}
+
+export type VcsCheckoutError2 = VcsCheckoutErrors[keyof VcsCheckoutErrors]
+
+export type VcsCheckoutResponses = {
+  /**
+   * VCS checkout
+   */
+  200: VcsInfo
+}
+
+export type VcsCheckoutResponse = VcsCheckoutResponses[keyof VcsCheckoutResponses]
 
 export type CommandListData = {
   body?: never

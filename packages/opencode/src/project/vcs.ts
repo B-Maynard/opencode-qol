@@ -278,6 +278,81 @@ export class PatchApplyError extends Schema.TaggedErrorClass<PatchApplyError>()(
   reason: Schema.Literals(["non-git", "not-clean"]),
 }) {}
 
+export const CommitInput = Schema.Struct({
+  message: Schema.String,
+  files: Schema.optional(Schema.Array(Schema.String)),
+})
+export type CommitInput = Schema.Schema.Type<typeof CommitInput>
+
+export const CommitResult = Schema.Struct({
+  committed: Schema.Boolean,
+})
+export type CommitResult = Schema.Schema.Type<typeof CommitResult>
+
+export class CommitError extends Schema.TaggedErrorClass<CommitError>()("VcsCommitError", {
+  message: Schema.String,
+  reason: Schema.Literals(["non-git", "nothing-to-commit"]),
+}) {}
+
+export const StageInput = Schema.Struct({
+  files: Schema.optional(Schema.Array(Schema.String)),
+})
+export type StageInput = Schema.Schema.Type<typeof StageInput>
+
+export const UnstageInput = StageInput
+export type UnstageInput = Schema.Schema.Type<typeof UnstageInput>
+
+export const StageResult = Schema.Struct({
+  files: Schema.Array(Schema.String),
+})
+export type StageResult = Schema.Schema.Type<typeof StageResult>
+
+export const UnstageResult = StageResult
+export type UnstageResult = Schema.Schema.Type<typeof UnstageResult>
+
+export class VcsStageError extends Schema.TaggedErrorClass<VcsStageError>()("VcsStageError", {
+  message: Schema.String,
+}) {}
+
+export class VcsUnstageError extends Schema.TaggedErrorClass<VcsUnstageError>()("VcsUnstageError", {
+  message: Schema.String,
+}) {}
+
+export const PushInput = Schema.Struct({
+  remote: Schema.optional(Schema.String),
+  branch: Schema.optional(Schema.String),
+})
+export type PushInput = Schema.Schema.Type<typeof PushInput>
+
+export const PushResult = Schema.Struct({
+  pushed: Schema.Boolean,
+})
+export type PushResult = Schema.Schema.Type<typeof PushResult>
+
+export class PushError extends Schema.TaggedErrorClass<PushError>()("VcsPushError", {
+  message: Schema.String,
+  reason: Schema.Literals(["non-git", "push-failed"]),
+}) {}
+
+export const CheckoutInput = Schema.Struct({
+  branch: Schema.String,
+  create: Schema.optional(Schema.Boolean),
+  base: Schema.optional(Schema.String),
+})
+export type CheckoutInput = Schema.Schema.Type<typeof CheckoutInput>
+
+export class CheckoutError extends Schema.TaggedErrorClass<CheckoutError>()("VcsCheckoutError", {
+  message: Schema.String,
+  reason: Schema.Literals(["non-git", "checkout-failed", "branch-exists"]),
+}) {}
+
+export const BranchInfo = Schema.Struct({
+  name: Schema.String,
+  current: Schema.Boolean,
+  remote: Schema.optional(Schema.String),
+}).annotate({ identifier: "VcsBranchInfo" })
+export type BranchInfo = Schema.Schema.Type<typeof BranchInfo>
+
 export interface Interface {
   readonly init: () => Effect.Effect<void>
   readonly branch: () => Effect.Effect<string | undefined>
@@ -286,6 +361,13 @@ export interface Interface {
   readonly diff: (mode: Mode, options?: DiffOptions) => Effect.Effect<FileDiff[]>
   readonly diffRaw: () => Effect.Effect<string>
   readonly apply: (input: ApplyInput) => Effect.Effect<ApplyResult, PatchApplyError>
+  readonly commit: (input: CommitInput) => Effect.Effect<CommitResult, CommitError>
+  readonly stage: (input: StageInput) => Effect.Effect<StageResult, VcsStageError>
+  readonly unstage: (input: UnstageInput) => Effect.Effect<UnstageResult, VcsUnstageError>
+  readonly staged: () => Effect.Effect<string[]>
+  readonly push: (input: PushInput) => Effect.Effect<PushResult, PushError>
+  readonly branches: () => Effect.Effect<BranchInfo[]>
+  readonly checkout: (input: CheckoutInput) => Effect.Effect<Info, CheckoutError>
 }
 
 interface State {
@@ -413,6 +495,145 @@ const layer: Layer.Layer<Service, never, Git.Service | EventV2Bridge.Service> = 
           })
         }
         return { applied: true }
+      }),
+      commit: Effect.fn("Vcs.commit")(function* (input: CommitInput) {
+        const ctx = yield* InstanceState.context
+        if (ctx.project.vcs !== "git") {
+          return yield* new CommitError({
+            message: "Changes can't be committed because the project is not git-based",
+            reason: "non-git",
+          })
+        }
+        yield* git.run(input.files ? ["add", "--", ...input.files] : ["add", "-A", "--"], { cwd: ctx.directory })
+        const args = (yield* git.hasHead(ctx.directory))
+          ? ["commit", "-m", input.message]
+          : ["commit", "--allow-empty", "-m", input.message]
+        const result = yield* git.run(args, { cwd: ctx.directory })
+        if (result.exitCode !== 0) {
+          return yield* new CommitError({ message: "There is nothing to commit", reason: "nothing-to-commit" })
+        }
+        return { committed: true }
+      }),
+      stage: Effect.fn("Vcs.stage")(function* (input: StageInput) {
+        const ctx = yield* InstanceState.context
+        if (ctx.project.vcs !== "git") {
+          return yield* new VcsStageError({
+            message: "Changes can't be staged because the project is not git-based",
+          })
+        }
+        // ponytail: paths from `git diff -- .` are repo-root-relative; resolve toplevel
+        // so `git add -- <path>` works when ctx.directory is a subdir of the repo.
+        const toplevel = (yield* git.run(["rev-parse", "--show-toplevel"], { cwd: ctx.directory })).text().trim()
+        const result = yield* git.run(
+          input.files && input.files.length > 0 ? ["add", "--", ...input.files] : ["add", "-A", "--"],
+          { cwd: toplevel },
+        )
+        if (result.exitCode !== 0) {
+          const stderr = result.stderr.toString().trim()
+          return yield* new VcsStageError({
+            message: `git add failed (exit ${result.exitCode})${stderr ? `: ${stderr}` : ""}`,
+          })
+        }
+        return { files: input.files ?? [] }
+      }),
+      unstage: Effect.fn("Vcs.unstage")(function* (input: UnstageInput) {
+        const ctx = yield* InstanceState.context
+        if (ctx.project.vcs !== "git") {
+          return yield* new VcsUnstageError({
+            message: "Changes can't be unstaged because the project is not git-based",
+          })
+        }
+        // ponytail: paths from `git diff -- .` are repo-root-relative; resolve toplevel
+        // so `git add -- <path>` works when ctx.directory is a subdir of the repo.
+        const toplevel = (yield* git.run(["rev-parse", "--show-toplevel"], { cwd: ctx.directory })).text().trim()
+        const result = yield* git.run(
+          input.files && input.files.length > 0 ? ["reset", "--", ...input.files] : ["reset"],
+          { cwd: toplevel },
+        )
+        if (result.exitCode !== 0) {
+          const stderr = result.stderr.toString().trim()
+          return yield* new VcsUnstageError({
+            message: `git reset failed (exit ${result.exitCode})${stderr ? `: ${stderr}` : ""}`,
+          })
+        }
+        return { files: input.files ?? [] }
+      }),
+      staged: Effect.fn("Vcs.staged")(function* () {
+        const ctx = yield* InstanceState.context
+        if (ctx.project.vcs !== "git") return []
+        const result = yield* git.run(["diff", "--cached", "--name-only"], { cwd: ctx.directory })
+        return result
+          .text()
+          .split("\n")
+          .filter((line) => line.length > 0)
+      }),
+      push: Effect.fn("Vcs.push")(function* (input: PushInput) {
+        const ctx = yield* InstanceState.context
+        if (ctx.project.vcs !== "git") {
+          return yield* new PushError({
+            message: "Changes can't be pushed because the project is not git-based",
+            reason: "non-git",
+          })
+        }
+        const current = yield* InstanceState.use(state, (x) => x.current)
+        const ref = input.branch ?? current
+        const result = yield* git.run(["push", input.remote ?? "origin", ...(ref ? [ref] : [])], {
+          cwd: ctx.directory,
+        })
+        if (result.exitCode !== 0) {
+          return yield* new PushError({ message: "Push failed", reason: "push-failed" })
+        }
+        return { pushed: true }
+      }),
+      branches: Effect.fn("Vcs.branches")(function* () {
+        const ctx = yield* InstanceState.context
+        if (ctx.project.vcs !== "git") return []
+        const result = yield* git.run(
+          ["branch", "-a", "--format=%(HEAD)%00%(refname:short)%00%(upstream:short)"],
+          { cwd: ctx.directory },
+        )
+        return result
+          .text()
+          .split("\n")
+          .filter(Boolean)
+          .map((line) => {
+            const [head, name, remote] = line.split("\0")
+            return { name, current: head === "*", remote: remote || undefined } satisfies BranchInfo
+          })
+      }),
+      checkout: Effect.fn("Vcs.checkout")(function* (input: CheckoutInput) {
+        const ctx = yield* InstanceState.context
+        if (ctx.project.vcs !== "git") {
+          return yield* new CheckoutError({
+            message: "Branch can't be switched because the project is not git-based",
+            reason: "non-git",
+          })
+        }
+        const result = yield* git.run(
+          input.create
+            ? ["checkout", "-b", input.branch, ...(input.base ? [input.base] : [])]
+            : ["checkout", input.branch],
+          { cwd: ctx.directory },
+        )
+        if (result.exitCode !== 0) {
+          if (input.create) {
+            const exists = yield* git.run(["rev-parse", "--verify", `refs/heads/${input.branch}`], {
+              cwd: ctx.directory,
+            })
+            if (exists.exitCode === 0) {
+              return yield* new CheckoutError({
+                message: `Branch ${input.branch} already exists`,
+                reason: "branch-exists",
+              })
+            }
+          }
+          return yield* new CheckoutError({ message: "Checkout failed", reason: "checkout-failed" })
+        }
+        yield* events.publish(Event.BranchUpdated, { branch: input.branch })
+        return {
+          branch: input.branch,
+          default_branch: yield* InstanceState.use(state, (x) => x.root?.name),
+        } satisfies Info
       }),
     })
   }),

@@ -14,8 +14,10 @@ import {
   createEffect,
   createComputed,
   createSignal,
+  createResource,
   on,
   onMount,
+  startTransition,
   type ParentProps,
   untrack,
 } from "solid-js"
@@ -73,6 +75,8 @@ import {
 import { createOpenReviewFile, createSessionTabs, createSizing, shouldShowFileTree } from "@/pages/session/helpers"
 import { MessageTimeline } from "@/pages/session/timeline/message-timeline"
 import { createTimelineModel } from "@/pages/session/timeline/model"
+import { SessionFileView } from "@/pages/session/file-tabs"
+import { GitPanel } from "@/components/git-panel"
 import { type DiffStyle, SessionReviewTab, type SessionReviewTabProps } from "@/pages/session/review-tab"
 import { useSessionLayout } from "@/pages/session/session-layout"
 import { restorePromptModel, syncPromptModel, syncSessionModel } from "@/pages/session/session-model-helpers"
@@ -111,9 +115,10 @@ const emptyFollowups: FollowupItem[] = []
 type ChangeMode = "git" | "branch" | "turn"
 type VcsMode = "git" | "branch"
 
-const sessionViewState = () => ({
+const sessionViewState = (mobileChangesMode: "changes" | "git" = "changes") => ({
   messageId: undefined as string | undefined,
   mobileTab: "session" as "session" | "changes",
+  mobileChangesMode,
 })
 
 function isCurrentSessionNotFoundError(error: unknown, sessionID: string | undefined) {
@@ -598,7 +603,7 @@ export default function Page() {
   )
 
   const [store, setStore] = createStore({
-    ...sessionViewState(),
+    ...sessionViewState(settings.general.programmingMode() ? "git" : "changes"),
     newSessionWorktree: "main",
     deferRender: false,
   })
@@ -700,6 +705,28 @@ export default function Page() {
     }
   })
   const refreshVcs = debounce(() => void queryClient.invalidateQueries({ queryKey: vcsKey() }), 100)
+  const [stagedFiles, { refetch: refetchStaged }] = createResource(
+    () => sdk().directory,
+    () => sdk().client.vcs.staged({}).then((result) => result.data ?? []),
+  )
+  const stageFiles = (files: string[]) => {
+    void sdk()
+      .client.vcs.stage({ files })
+      .then(() => {
+        startTransition(() => refetchStaged())
+        refreshVcs()
+      })
+      .catch((err) => console.error("vcs.stage failed", err))
+  }
+  const unstageFiles = (files: string[]) => {
+    void sdk()
+      .client.vcs.unstage({ files })
+      .then(() => {
+        startTransition(() => refetchStaged())
+        refreshVcs()
+      })
+      .catch((err) => console.error("vcs.unstage failed", err))
+  }
   const reviewDiffs = () => {
     if (reviewMode() === "git" || reviewMode() === "branch")
       // avoids suspense
@@ -942,7 +969,7 @@ export default function Page() {
     on(
       sessionKey,
       () => {
-        setStore(sessionViewState())
+        setStore(sessionViewState(settings.general.programmingMode() ? "git" : "changes"))
         setUi("pendingMessage", undefined)
       },
       { defer: true },
@@ -1426,6 +1453,23 @@ export default function Page() {
     view().review.openPath(path)
     view().review.setFile(path)
     setTree("pendingDiff", path)
+    // ponytail: V2 review lives in a tab; without this, the git-panel click
+    // updates review state the user can't see.
+    if (newSessionDesign()) {
+      tabs().setActive("review")
+    }
+  }
+
+  const focusMobileReviewDiff = (path: string) => {
+    setStore("mobileChangesMode", "changes")
+    focusReviewDiff(path)
+  }
+
+  const openMobileFileTab = (path: string, edit: boolean) => {
+    const tab = edit ? file.editTab(path) : file.tab(path)
+    tabs().open(tab)
+    tabs().setActive(tab)
+    void file.load(path)
   }
 
   createEffect(() => {
@@ -2064,16 +2108,80 @@ export default function Page() {
         <Switch>
           <Match when={params.id && mobileChanges()}>
             <div class="relative h-full overflow-hidden">
-              {reviewContent({
-                diffStyle: "unified",
-                classes: {
-                  root: "pb-8 [&_[data-slot=session-review-list]]:pb-0",
-                  header: "px-4 !h-16 !pb-4",
-                  container: "px-4",
-                },
-                loadingClass: "px-4 py-4 text-text-weak",
-                emptyClass: "h-full pb-64 -mt-4 flex flex-col items-center justify-center text-center gap-6",
-              })}
+              <Show
+                when={activeFileTab()}
+                keyed
+                fallback={
+                  <div class="flex h-full min-h-0 flex-col">
+                    <Show when={canReview() && !nogit()}>
+                      <div class="flex shrink-0 items-center gap-1.5 px-4 pt-3">
+                        <Button
+                          size="small"
+                          variant={store.mobileChangesMode === "changes" ? "primary" : "secondary"}
+                          onClick={() => setStore("mobileChangesMode", "changes")}
+                        >
+                          {language.t("session.review.change.other")}
+                        </Button>
+                        <Button
+                          size="small"
+                          variant={store.mobileChangesMode === "git" ? "primary" : "secondary"}
+                          onClick={() => setStore("mobileChangesMode", "git")}
+                        >
+                          {language.t("session.git.tab")}
+                        </Button>
+                      </div>
+                    </Show>
+                    <div class="flex-1 min-h-0 overflow-hidden">
+                      <Show when={canReview() && !nogit() && store.mobileChangesMode === "git"}>
+                        <GitPanel
+                          files={() =>
+                            reviewDiffs().filter((diff): diff is VcsFileDiff => typeof diff.file === "string")
+                          }
+                          onSelectFile={focusMobileReviewDiff}
+                          staged={() => stagedFiles() ?? []}
+                          onStage={stageFiles}
+                          onUnstage={unstageFiles}
+                        />
+                      </Show>
+                      <Show when={!(canReview() && !nogit() && store.mobileChangesMode === "git")}>
+                        {reviewContent({
+                          diffStyle: "unified",
+                          classes: {
+                            root: "pb-8 [&_[data-slot=session-review-list]]:pb-0",
+                            header: "px-4 !h-16 !pb-4",
+                            container: "px-4",
+                          },
+                          loadingClass: "px-4 py-4 text-text-weak",
+                          emptyClass: "h-full pb-64 -mt-4 flex flex-col items-center justify-center text-center gap-6",
+                        })}
+                      </Show>
+                    </div>
+                  </div>
+                }
+              >
+                {(tab) => (
+                  <div class="flex h-full min-h-0 flex-col">
+                    <div class="flex shrink-0 items-center gap-1.5 px-3 pt-2">
+                      <div class="min-w-0 flex-1 truncate text-12-regular text-text-weak" title={file.pathFromTab(tab)}>
+                        {getFilename(file.pathFromTab(tab) ?? tab)}
+                      </div>
+                      <Button
+                        size="small"
+                        variant="secondary"
+                        onClick={() => openMobileFileTab(file.pathFromTab(tab)!, true)}
+                      >
+                        {language.t("fileEditor.edit")}
+                      </Button>
+                      <Button size="small" variant="ghost" onClick={() => tabs().close(tab)}>
+                        {language.t("common.close")}
+                      </Button>
+                    </div>
+                    <div class="min-h-0 flex-1">
+                      <SessionFileView tab={tab} />
+                    </div>
+                  </div>
+                )}
+              </Show>
             </div>
           </Match>
           <Match when={params.id}>
@@ -2298,7 +2406,7 @@ export default function Page() {
         </div>
 
         <Show when={!newSessionDesign() && desktopSidePanelOpen()}>
-          <Suspense>
+          <Suspense fallback={<div class="h-full w-full bg-background-stronger" />}>
             <SessionSidePanel
               canReview={canReview}
               diffs={reviewDiffs}
@@ -2312,6 +2420,9 @@ export default function Page() {
               focusReviewDiff={focusReviewDiff}
               reviewSnap={ui.reviewSnap}
               size={size}
+              staged={() => stagedFiles() ?? []}
+              onStage={stageFiles}
+              onUnstage={unstageFiles}
             />
           </Suspense>
         </Show>
@@ -2320,7 +2431,7 @@ export default function Page() {
             <div class="min-w-0 h-full flex flex-1 flex-col">
               <Show when={isDesktop() && (desktopV2ReviewOpen() || desktopFileTreeOpen())}>
                 <div class="min-h-0 flex-1">
-                  <Suspense>
+                  <Suspense fallback={<div class="h-full w-full bg-background-stronger" />}>
                     <SessionSidePanel
                       canReview={canReview}
                       diffs={reviewDiffs}
@@ -2343,6 +2454,9 @@ export default function Page() {
                       reviewSnap={ui.reviewSnap}
                       size={size}
                       stacked={desktopV2PanelLayout().stacked}
+                      staged={() => stagedFiles() ?? []}
+                      onStage={stageFiles}
+                      onUnstage={unstageFiles}
                     />
                   </Suspense>
                 </div>

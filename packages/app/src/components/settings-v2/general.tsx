@@ -346,6 +346,18 @@ export const SettingsGeneralV2: Component<{
         </SettingsRowV2>
 
         <SettingsRowV2
+          title={language.t("settings.general.row.programmingMode.title")}
+          description={language.t("settings.general.row.programmingMode.description")}
+        >
+          <div data-action="settings-programming-mode">
+            <Switch
+              checked={settings.general.programmingMode()}
+              onChange={(checked) => settings.general.setProgrammingMode(checked)}
+            />
+          </div>
+        </SettingsRowV2>
+
+        <SettingsRowV2
           title={language.t("settings.general.row.shellToolPartsExpanded.title")}
           description={language.t("settings.general.row.shellToolPartsExpanded.description")}
         >

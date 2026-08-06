@@ -19,12 +19,17 @@ const sentry =
       })
     : false
 
+// Propagate backend PORT to the frontend SDK so `PORT=5000 bun dev` works end-to-end.
+if (process.env.PORT && !process.env.VITE_OPENCODE_SERVER_PORT) {
+  process.env.VITE_OPENCODE_SERVER_PORT = process.env.PORT
+}
+
 export default defineConfig({
   plugins: [desktopPlugin, sentry] as any,
   server: {
     host: "0.0.0.0",
     allowedHosts: true,
-    port: 3000,
+    port: Number(process.env.PORT ?? process.env.VITE_PORT ?? 3000),
   },
   build: {
     target: "esnext",

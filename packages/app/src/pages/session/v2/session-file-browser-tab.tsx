@@ -1,13 +1,16 @@
-import { createMemo, createSignal, createUniqueId, Show } from "solid-js"
+import { createEffect, createMemo, createSignal, createUniqueId, on, Show } from "solid-js"
 import { createQuery } from "@tanstack/solid-query"
+import { Button } from "@opencode-ai/ui/button"
 import { Icon } from "@opencode-ai/ui/icon"
 import { SessionFilePanelV2, SessionFilePanelV2Empty } from "@opencode-ai/session-ui/v2/session-file-panel-v2"
 import { SessionReviewV2Sidebar } from "@opencode-ai/session-ui/v2/session-review-v2"
 import FileTreeV2, { type Kind } from "@/components/file-tree-v2"
+import { GitPanel } from "@/components/git-panel"
 import { useFile } from "@/context/file"
 import { useLanguage } from "@/context/language"
 import { useLayout } from "@/context/layout"
 import { useSDK } from "@/context/sdk"
+import { useSettings } from "@/context/settings"
 import { displayName } from "@/pages/layout/helpers"
 import { useSessionLayout } from "@/pages/session/session-layout"
 import { SessionFileView } from "@/pages/session/file-tabs"
@@ -32,16 +35,35 @@ export function SessionFileBrowserTab(props: {
   state: SessionFileBrowserState
   onSelect: (path: string) => void
   onSelectPermanent: (path: string) => void
+  onEdit?: (path: string) => void
+  onSelectFile?: (path: string) => void
+  diffs?: () => { file: string }[]
   filterRef?: (element: HTMLInputElement) => void
+  staged?: () => string[]
+  onStage?: (files: string[]) => void
+  onUnstage?: (files: string[]) => void
 }) {
   const file = useFile()
   const language = useLanguage()
   const layout = useLayout()
   const sdk = useSDK()
+  const settings = useSettings()
   const { workspaceKey } = useSessionLayout()
   const resultsID = `session-file-browser-results-${createUniqueId()}`
   const [filter, setFilter] = createSignal("")
   const [explicitHighlight, setExplicitHighlight] = createSignal<string>()
+  const [userPicked, setUserPicked] = createSignal(false)
+  const [mode, setMode] = createSignal<"files" | "git">(
+    settings.general.programmingMode() ? "git" : "files",
+  )
+  // ponytail: sticky default — follow the programming-mode setting until the
+  // user picks a mode explicitly.
+  createEffect(
+    on(settings.general.programmingMode, (enabled) => {
+      if (userPicked()) return
+      setMode(enabled ? "git" : "files")
+    }),
+  )
   const sidebarOpened = () => props.placeholder || props.state.sidebarOpened()
   const query = createMemo(() => filter().trim())
   const search = createQuery(() => {
@@ -99,6 +121,32 @@ export function SessionFileBrowserTab(props: {
           open={sidebarOpened()}
           transition={props.state.sidebarTransition()}
           title={<span class="truncate">{title()}</span>}
+          stats={
+            <Show when={!settings.general.programmingMode()}>
+              <div class="flex gap-1">
+                <Button
+                  size="small"
+                  variant={mode() === "files" ? "primary" : "secondary"}
+                  onClick={() => {
+                    setUserPicked(true)
+                    setMode("files")
+                  }}
+                >
+                  {language.t("session.files.all")}
+                </Button>
+                <Button
+                  size="small"
+                  variant={mode() === "git" ? "primary" : "secondary"}
+                  onClick={() => {
+                    setUserPicked(true)
+                    setMode("git")
+                  }}
+                >
+                  {language.t("session.git.tab")}
+                </Button>
+              </div>
+            </Show>
+          }
           filter={filter()}
           onFilterChange={setFilter}
           onFilterKeyDown={onFilterKeyDown}
@@ -111,47 +159,60 @@ export function SessionFileBrowserTab(props: {
           onWidthChange={props.state.resizeSidebar}
         >
           <Show
-            when={query()}
+            when={mode() === "files" && !settings.general.programmingMode()}
             fallback={
-              <FileTreeV2
-                active={props.active}
-                kinds={props.kinds}
-                onFileClick={(node) => props.onSelect(node.path)}
-                onFileDoubleClick={(node) => props.onSelectPermanent(node.path)}
+              <GitPanel
+                files={() => props.diffs?.() ?? []}
+                onSelectFile={props.onSelectFile}
+                staged={() => props.staged?.() ?? []}
+                onStage={(files) => props.onStage?.(files)}
+                onUnstage={(files) => props.onUnstage?.(files)}
               />
             }
           >
             <Show
-              when={!loading()}
+              when={query()}
               fallback={
-                <div role="status" class="px-2 py-2 text-12-regular text-text-weak">
-                  {language.t("common.loading")}
-                  {language.t("common.loading.ellipsis")}
-                </div>
+                <FileTreeV2
+                  active={props.active}
+                  kinds={props.kinds}
+                  onFileClick={(node) => props.onSelect(node.path)}
+                  onFileDoubleClick={(node) => props.onSelectPermanent(node.path)}
+                />
               }
             >
               <Show
-                when={files().length > 0}
+                when={!loading()}
                 fallback={
                   <div role="status" class="px-2 py-2 text-12-regular text-text-weak">
-                    {language.t("palette.empty")}
+                    {language.t("common.loading")}
+                    {language.t("common.loading.ellipsis")}
                   </div>
                 }
               >
-                <SessionFileListV2
-                  id={resultsID}
-                  role="listbox"
-                  optionID={optionID}
-                  files={files()}
-                  kinds={props.kinds}
-                  active={props.active}
-                  highlighted={highlighted()}
-                  onFileClick={(path) => {
-                    setExplicitHighlight(path)
-                    props.onSelect(path)
-                  }}
-                  onFileDoubleClick={props.onSelectPermanent}
-                />
+                <Show
+                  when={files().length > 0}
+                  fallback={
+                    <div role="status" class="px-2 py-2 text-12-regular text-text-weak">
+                      {language.t("palette.empty")}
+                    </div>
+                  }
+                >
+                  <SessionFileListV2
+                    id={resultsID}
+                    role="listbox"
+                    optionID={optionID}
+                    files={files()}
+                    kinds={props.kinds}
+                    active={props.active}
+                    highlighted={highlighted()}
+                    onFileClick={(path) => {
+                      setExplicitHighlight(path)
+                      props.onSelect(path)
+                    }}
+                    onFileDoubleClick={props.onSelectPermanent}
+                  />
+                </Show>
               </Show>
             </Show>
           </Show>
@@ -170,10 +231,21 @@ export function SessionFileBrowserTab(props: {
           </SessionFilePanelV2Empty>
         }
       >
-        <div class="min-h-0 flex-1">
-          <Show when={props.tab} keyed>
-            {(tab) => <SessionFileView tab={tab} />}
+        <div class="min-h-0 flex-1 flex flex-col">
+          <Show when={props.active}>
+            {(active) => (
+              <div class="flex justify-end px-3 pt-2">
+                <Button size="small" variant="secondary" onClick={() => props.onEdit?.(active())}>
+                  {language.t("fileEditor.edit")}
+                </Button>
+              </div>
+            )}
           </Show>
+          <div class="min-h-0 flex-1">
+            <Show when={props.tab} keyed>
+              {(tab) => <SessionFileView tab={tab} />}
+            </Show>
+          </div>
         </div>
       </Show>
     </SessionFilePanelV2>

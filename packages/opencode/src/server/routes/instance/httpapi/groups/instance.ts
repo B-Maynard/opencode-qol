@@ -40,6 +40,39 @@ export class ApiVcsApplyError extends Schema.ErrorClass<ApiVcsApplyError>("VcsAp
   { httpApiStatus: 400 },
 ) {}
 
+export class ApiVcsCommitError extends Schema.ErrorClass<ApiVcsCommitError>("VcsCommitError")(
+  {
+    name: Schema.Literal("VcsCommitError"),
+    data: Schema.Struct({
+      message: Schema.String,
+      reason: Schema.Literals(["non-git", "nothing-to-commit"]),
+    }),
+  },
+  { httpApiStatus: 400 },
+) {}
+
+export class ApiVcsPushError extends Schema.ErrorClass<ApiVcsPushError>("VcsPushError")(
+  {
+    name: Schema.Literal("VcsPushError"),
+    data: Schema.Struct({
+      message: Schema.String,
+      reason: Schema.Literals(["non-git", "push-failed"]),
+    }),
+  },
+  { httpApiStatus: 400 },
+) {}
+
+export class ApiVcsCheckoutError extends Schema.ErrorClass<ApiVcsCheckoutError>("VcsCheckoutError")(
+  {
+    name: Schema.Literal("VcsCheckoutError"),
+    data: Schema.Struct({
+      message: Schema.String,
+      reason: Schema.Literals(["non-git", "checkout-failed", "branch-exists"]),
+    }),
+  },
+  { httpApiStatus: 400 },
+) {}
+
 export const InstancePaths = {
   dispose: "/instance/dispose",
   path: "/path",
@@ -48,6 +81,13 @@ export const InstancePaths = {
   vcsDiff: "/vcs/diff",
   vcsDiffRaw: "/vcs/diff/raw",
   vcsApply: "/vcs/apply",
+  vcsCommit: "/vcs/commit",
+  vcsStage: "/vcs/stage",
+  vcsUnstage: "/vcs/unstage",
+  vcsStaged: "/vcs/staged",
+  vcsPush: "/vcs/push",
+  vcsBranches: "/vcs/branches",
+  vcsCheckout: "/vcs/checkout",
   command: "/command",
   agent: "/agent",
   skill: "/skill",
@@ -134,6 +174,86 @@ export const InstanceApi = HttpApi.make("instance")
             identifier: "vcs.apply",
             summary: "Apply VCS patch",
             description: "Apply a raw patch to the current working tree.",
+          }),
+        ),
+        HttpApiEndpoint.post("vcsCommit", InstancePaths.vcsCommit, {
+          query: WorkspaceRoutingQuery,
+          payload: Vcs.CommitInput,
+          success: described(Vcs.CommitResult, "VCS commit created"),
+          error: ApiVcsCommitError,
+        }).annotateMerge(
+          OpenApi.annotations({
+            identifier: "vcs.commit",
+            summary: "Commit VCS changes",
+            description: "Stage and commit the current working tree changes.",
+          }),
+        ),
+        HttpApiEndpoint.post("vcsStage", InstancePaths.vcsStage, {
+          query: WorkspaceRoutingQuery,
+          payload: Vcs.StageInput,
+          success: described(Vcs.StageResult, "VCS files staged"),
+          error: Vcs.VcsStageError,
+        }).annotateMerge(
+          OpenApi.annotations({
+            identifier: "vcs.stage",
+            summary: "Stage VCS changes",
+            description: "Stage files (or all changes) in the current working tree.",
+          }),
+        ),
+        HttpApiEndpoint.post("vcsUnstage", InstancePaths.vcsUnstage, {
+          query: WorkspaceRoutingQuery,
+          payload: Vcs.UnstageInput,
+          success: described(Vcs.UnstageResult, "VCS files unstaged"),
+          error: Vcs.VcsUnstageError,
+        }).annotateMerge(
+          OpenApi.annotations({
+            identifier: "vcs.unstage",
+            summary: "Unstage VCS changes",
+            description: "Unstage files (or all changes) in the current working tree.",
+          }),
+        ),
+        HttpApiEndpoint.get("vcsStaged", InstancePaths.vcsStaged, {
+          query: WorkspaceRoutingQuery,
+          success: described(Schema.Array(Schema.String), "VCS staged files"),
+        }).annotateMerge(
+          OpenApi.annotations({
+            identifier: "vcs.staged",
+            summary: "Get staged files",
+            description: "List files currently staged in the index.",
+          }),
+        ),
+        HttpApiEndpoint.post("vcsPush", InstancePaths.vcsPush, {
+          query: WorkspaceRoutingQuery,
+          payload: Vcs.PushInput,
+          success: described(Vcs.PushResult, "VCS pushed"),
+          error: ApiVcsPushError,
+        }).annotateMerge(
+          OpenApi.annotations({
+            identifier: "vcs.push",
+            summary: "Push VCS changes",
+            description: "Push the current branch to its remote.",
+          }),
+        ),
+        HttpApiEndpoint.get("vcsBranches", InstancePaths.vcsBranches, {
+          query: WorkspaceRoutingQuery,
+          success: described(Schema.Array(Vcs.BranchInfo), "VCS branches"),
+        }).annotateMerge(
+          OpenApi.annotations({
+            identifier: "vcs.branches",
+            summary: "List VCS branches",
+            description: "List local and remote branches with their current and upstream state.",
+          }),
+        ),
+        HttpApiEndpoint.post("vcsCheckout", InstancePaths.vcsCheckout, {
+          query: WorkspaceRoutingQuery,
+          payload: Vcs.CheckoutInput,
+          success: described(Vcs.Info, "VCS checkout"),
+          error: ApiVcsCheckoutError,
+        }).annotateMerge(
+          OpenApi.annotations({
+            identifier: "vcs.checkout",
+            summary: "Checkout VCS branch",
+            description: "Switch to an existing branch or create and switch to a new one.",
           }),
         ),
         HttpApiEndpoint.get("command", InstancePaths.command, {

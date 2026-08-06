@@ -10,6 +10,7 @@ import ignore from "ignore"
 import path from "path"
 import { HttpApiBuilder } from "effect/unstable/httpapi"
 import { InstanceHttpApi } from "../api"
+import { FileWriteError } from "../groups/file"
 
 export const fileHandlers = HttpApiBuilder.group(InstanceHttpApi, "file", (handlers) =>
   Effect.gen(function* () {
@@ -128,6 +129,39 @@ export const fileHandlers = HttpApiBuilder.group(InstanceHttpApi, "file", (handl
       return []
     })
 
+    const write = Effect.fn("FileHttpApi.write")(function* (ctx: { payload: { path: string; content: string } }) {
+      const directory = (yield* InstanceState.context).directory
+      const file = path.resolve(directory, ctx.payload.path)
+      if (!FSUtil.contains(directory, file)) {
+        return yield* new FileWriteError({
+          name: "FileWriteError",
+          data: { reason: "path-out-of-scope", message: "Path escapes the project directory" },
+        })
+      }
+      if (Buffer.byteLength(ctx.payload.content) > 5 * 1024 * 1024) {
+        return yield* new FileWriteError({
+          name: "FileWriteError",
+          data: { reason: "too-large", message: "File content exceeds 5 MB" },
+        })
+      }
+      if (ctx.payload.content.slice(0, 8192).includes("\0")) {
+        return yield* new FileWriteError({
+          name: "FileWriteError",
+          data: { reason: "binary", message: "Binary content is not supported" },
+        })
+      }
+      if (yield* FSUtil.Service.use((fs) => fs.isDir(file))) {
+        return yield* new FileWriteError({
+          name: "FileWriteError",
+          data: { reason: "not-a-file", message: "Path is a directory, not a file" },
+        })
+      }
+      // The location-scoped file watcher publishes an update event for the
+      // write, which refreshes the file tree in the app automatically.
+      yield* FSUtil.Service.use((fs) => fs.writeFileString(file, ctx.payload.content)).pipe(Effect.orDie)
+      return { written: true }
+    })
+
     return handlers
       .handle("findText", findText)
       .handle("findFile", findFile)
@@ -135,5 +169,6 @@ export const fileHandlers = HttpApiBuilder.group(InstanceHttpApi, "file", (handl
       .handle("list", list)
       .handle("content", content)
       .handle("status", status)
+      .handle("write", write)
   }),
 ).pipe(Layer.provide(locationServiceMapLayer))

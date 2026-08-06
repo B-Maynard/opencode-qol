@@ -23,6 +23,7 @@ import { useSettings } from "@/context/settings"
 import { getSessionHandoff } from "@/pages/session/handoff"
 import { useSessionLayout } from "@/pages/session/session-layout"
 import { createSessionTabs } from "@/pages/session/helpers"
+import { FileEditor } from "@/components/file-editor"
 
 type SessionFileViewProps = {
   tab: string
@@ -215,10 +216,18 @@ export function FileTabContent(props: { tab: string }) {
 
 export function SessionFileView(props: SessionFileViewProps) {
   const settings = useSettings()
+  const file = useFile()
 
   return (
-    <Show when={settings.general.newLayoutDesigns()} fallback={<SessionFileViewV1 tab={props.tab} />}>
-      <SessionFileViewV2 tab={props.tab} />
+    <Show
+      when={props.tab.startsWith("edit://")}
+      fallback={
+        <Show when={settings.general.newLayoutDesigns()} fallback={<SessionFileViewV1 tab={props.tab} />}>
+          <SessionFileViewV2 tab={props.tab} />
+        </Show>
+      }
+    >
+      <FileEditor path={file.pathFromTab(props.tab)!} />
     </Show>
   )
 }

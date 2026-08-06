@@ -38,6 +38,7 @@ type CompatiblePermissionApi = Omit<ServerApi["permission"], "reply"> & {
 export type CompatibleApi = Omit<ServerApi, "session" | "permission"> & {
   readonly session: CompatibleSessionApi
   readonly permission: CompatiblePermissionApi
+  readonly vcs: CompatibleVcsApi
 }
 type LegacyPrompt = {
   agent?: string
@@ -46,6 +47,15 @@ type LegacyPrompt = {
   legacyParts?: (TextPartInput | FilePartInput | AgentPartInput)[]
 }
 type LegacyLocation = { directory?: string }
+type Located<T> = {
+  location: { directory: string; project: { id: string; directory: string } }
+  data: T
+}
+type CompatibleVcsApi = ServerApi["vcs"] & {
+  stage: (input: { location?: LegacyLocation; files?: string[] }) => Promise<Located<{ files: string[] }>>
+  unstage: (input: { location?: LegacyLocation; files?: string[] }) => Promise<Located<{ files: string[] }>>
+  staged: (input?: { location?: LegacyLocation }) => Promise<Located<string[]>>
+}
 type CompatibleInput = {
   protocol: Promise<ServerProtocol>
   current: ServerApi
@@ -86,8 +96,8 @@ function sessionInfo(session: Session): SessionInfo {
 export function createCompatibleApi(input: CompatibleInput): CompatibleApi {
   const v1 = createV1Api(input)
   return lazyApi(
-    input.protocol.then((protocol) => (protocol === "v1" ? v1 : input.current)),
-    input.current,
+    input.protocol.then((protocol) => (protocol === "v1" ? v1 : input.current)) as Promise<CompatibleApi>,
+    input.current as CompatibleApi,
   )
 }
 
@@ -355,6 +365,18 @@ function createV1Api(input: CompatibleInput): CompatibleApi {
           })),
           value.location,
         )
+      },
+      async stage(value: { location?: LegacyLocation; files?: string[] }) {
+        const result = await legacy(value.location).vcs.stage({ files: value.files })
+        return located(result.data ?? { files: [] }, value.location)
+      },
+      async unstage(value: { location?: LegacyLocation; files?: string[] }) {
+        const result = await legacy(value.location).vcs.unstage({ files: value.files })
+        return located(result.data ?? { files: [] }, value.location)
+      },
+      async staged(value?: { location?: LegacyLocation }) {
+        const result = await legacy(value?.location).vcs.staged()
+        return located(result.data ?? [], value?.location)
       },
     },
     file: {

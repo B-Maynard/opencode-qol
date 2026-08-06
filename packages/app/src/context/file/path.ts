@@ -3,6 +3,11 @@ export function stripFileProtocol(input: string) {
   return input.slice("file://".length)
 }
 
+export function stripEditProtocol(input: string) {
+  if (!input.startsWith("edit://")) return input
+  return input.slice("edit://".length)
+}
+
 export function stripQueryAndHash(input: string) {
   const hashIndex = input.indexOf("#")
   const queryIndex = input.indexOf("?")
@@ -105,7 +110,7 @@ export function createPathHelpers(scope: () => string) {
   const normalize = (input: string) => {
     const root = scope()
 
-    let path = unquoteGitPath(decodeFilePath(stripQueryAndHash(stripFileProtocol(input))))
+    let path = unquoteGitPath(decodeFilePath(stripQueryAndHash(stripEditProtocol(stripFileProtocol(input)))))
 
     // Separator-agnostic prefix stripping for Cygwin/native Windows compatibility
     // Only case-insensitive on Windows (drive letter or UNC paths)
@@ -135,8 +140,13 @@ export function createPathHelpers(scope: () => string) {
     return `file://${encodeFilePath(path)}`
   }
 
+  const editTab = (input: string) => {
+    const path = normalize(input)
+    return `edit://${encodeFilePath(path)}`
+  }
+
   const pathFromTab = (tabValue: string) => {
-    if (!tabValue.startsWith("file://")) return
+    if (!tabValue.startsWith("file://") && !tabValue.startsWith("edit://")) return
     return normalize(tabValue)
   }
 
@@ -150,6 +160,7 @@ export function createPathHelpers(scope: () => string) {
   return {
     normalize,
     tab,
+    editTab,
     pathFromTab,
     normalizeDir,
   }

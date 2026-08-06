@@ -99,7 +99,28 @@ export const FilePaths = {
   list: "/file",
   content: "/file/content",
   status: "/file/status",
+  write: "/file/write",
 } as const
+
+export const WriteInput = Schema.Struct({
+  path: Schema.String,
+  content: Schema.String,
+})
+
+export const WriteResult = Schema.Struct({
+  written: Schema.Boolean,
+}).annotate({ identifier: "FileWriteResult" })
+
+export class FileWriteError extends Schema.ErrorClass<FileWriteError>("FileWriteError")(
+  {
+    name: Schema.Literal("FileWriteError"),
+    data: Schema.Struct({
+      message: Schema.String,
+      reason: Schema.Literals(["path-out-of-scope", "not-a-file", "binary", "too-large"]),
+    }),
+  },
+  { httpApiStatus: 400 },
+) {}
 
 export const FileApi = HttpApi.make("file")
   .add(
@@ -163,6 +184,18 @@ export const FileApi = HttpApi.make("file")
             identifier: "file.status",
             summary: "Get file status",
             description: "Get the git status of all files in the project.",
+          }),
+        ),
+        HttpApiEndpoint.post("write", FilePaths.write, {
+          query: WorkspaceRoutingQuery,
+          payload: WriteInput,
+          success: described(WriteResult, "File written"),
+          error: FileWriteError,
+        }).annotateMerge(
+          OpenApi.annotations({
+            identifier: "file.write",
+            summary: "Write file",
+            description: "Write text content to a file inside the project directory.",
           }),
         ),
       )
