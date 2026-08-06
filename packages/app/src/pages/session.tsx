@@ -73,6 +73,8 @@ import {
   SessionComposerRegion,
 } from "@/pages/session/composer"
 import { createOpenReviewFile, createSessionTabs, createSizing, shouldShowFileTree } from "@/pages/session/helpers"
+import FileTree from "@/components/file-tree"
+import { normalizeFileTreeV2Path } from "@/components/file-tree-v2-model"
 import { MessageTimeline } from "@/pages/session/timeline/message-timeline"
 import { createTimelineModel } from "@/pages/session/timeline/model"
 import { SessionFileView } from "@/pages/session/file-tabs"
@@ -115,7 +117,7 @@ const emptyFollowups: FollowupItem[] = []
 type ChangeMode = "git" | "branch" | "turn"
 type VcsMode = "git" | "branch"
 
-const sessionViewState = (mobileChangesMode: "changes" | "git" = "changes") => ({
+const sessionViewState = (mobileChangesMode: "changes" | "all" | "git" = "changes") => ({
   messageId: undefined as string | undefined,
   mobileTab: "session" as "session" | "changes",
   mobileChangesMode,
@@ -751,6 +753,39 @@ export default function Page() {
       return vcsQuery.isFetched ? (vcsQuery.data ?? []) : []
     return turnDiffs()
   }
+  const mobileDiffFiles = createMemo(() =>
+    reviewDiffs()
+      .filter((diff): diff is VcsFileDiff => typeof diff.file === "string")
+      .map((diff) => diff.file),
+  )
+  const mobileKinds = createMemo(() => {
+    const merge = (a: "add" | "del" | "mix" | undefined, b: "add" | "del" | "mix") => {
+      if (!a) return b
+      if (a === b) return a
+      return "mix" as const
+    }
+
+    const out = new Map<string, "add" | "del" | "mix">()
+    for (const diff of reviewDiffs().filter((diff): diff is VcsFileDiff => typeof diff.file === "string")) {
+      const file = normalizeFileTreeV2Path(diff.file)
+      const kind = diff.status === "added" ? "add" : diff.status === "deleted" ? "del" : "mix"
+
+      out.set(file, kind)
+
+      const parts = file.split("/")
+      for (const [idx] of parts.slice(0, -1).entries()) {
+        const dir = parts.slice(0, idx + 1).join("/")
+        if (!dir) continue
+        out.set(dir, merge(out.get(dir), kind))
+      }
+    }
+    return out
+  })
+  const mobileNofiles = createMemo(() => {
+    const state = file.tree.state("")
+    if (!state?.loaded) return false
+    return file.tree.children("").length === 0
+  })
   const activeReviewFile = () => {
     const diffs = reviewDiffs()
     const selected = reviewFile()
@@ -2154,6 +2189,13 @@ export default function Page() {
                         </Button>
                         <Button
                           size="small"
+                          variant={store.mobileChangesMode === "all" ? "primary" : "secondary"}
+                          onClick={() => setStore("mobileChangesMode", "all")}
+                        >
+                          {language.t("session.files.all")}
+                        </Button>
+                        <Button
+                          size="small"
                           variant={store.mobileChangesMode === "git" ? "primary" : "secondary"}
                           onClick={() => setStore("mobileChangesMode", "git")}
                         >
@@ -2175,7 +2217,33 @@ export default function Page() {
                           onPushSuccess={refreshVcsState}
                         />
                       </Show>
-                      <Show when={!(canReview() && !nogit() && store.mobileChangesMode === "git")}>
+                      <Show when={canReview() && !nogit() && store.mobileChangesMode === "all"}>
+                        <Switch>
+                          <Match when={mobileNofiles()}>
+                            <div class="h-full flex items-center justify-center px-4 text-center text-12-regular text-text-weak">
+                              {language.t("session.files.empty")}
+                            </div>
+                          </Match>
+                          <Match when={true}>
+                            <FileTree
+                              path=""
+                              class="pt-3"
+                              modified={mobileDiffFiles()}
+                              kinds={mobileKinds()}
+                              onFileClick={(node) => openMobileFileTab(node.path, false)}
+                            />
+                          </Match>
+                        </Switch>
+                      </Show>
+                      <Show
+                        when={
+                          !(
+                            canReview() &&
+                            !nogit() &&
+                            (store.mobileChangesMode === "git" || store.mobileChangesMode === "all")
+                          )
+                        }
+                      >
                         {reviewContent({
                           diffStyle: "unified",
                           classes: {

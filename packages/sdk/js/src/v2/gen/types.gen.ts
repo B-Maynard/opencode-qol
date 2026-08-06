@@ -2360,6 +2360,14 @@ export type VcsCommitError = {
   }
 }
 
+export type VcsCommitMessageError = {
+  name: "VcsCommitMessageError"
+  data: {
+    message: string
+    reason: "non-git" | "nothing-to-commit" | "no-model" | "generation-failed"
+  }
+}
+
 export type VcsStageError = {
   _tag: "VcsStageError"
   message: string
@@ -8432,6 +8440,34 @@ export type VcsCommitResponses = {
 }
 
 export type VcsCommitResponse = VcsCommitResponses[keyof VcsCommitResponses]
+
+export type VcsCommitMessageData = {
+  body?: never
+  path?: never
+  query?: {
+    directory?: string
+    workspace?: string
+  }
+  url: "/vcs/commit-message"
+}
+
+export type VcsCommitMessageErrors = {
+  /**
+   * VcsCommitMessageError | InvalidRequestError
+   */
+  400: VcsCommitMessageError | InvalidRequestError
+}
+
+export type VcsCommitMessageError2 = VcsCommitMessageErrors[keyof VcsCommitMessageErrors]
+
+export type VcsCommitMessageResponses = {
+  /**
+   * Generated VCS commit message
+   */
+  200: string
+}
+
+export type VcsCommitMessageResponse = VcsCommitMessageResponses[keyof VcsCommitMessageResponses]
 
 export type VcsStageData = {
   body?: {

@@ -786,6 +786,11 @@ export const dict = {
   "session.git.newBranchOption": "New branch...",
   "session.git.createFrom": "Create from",
   "session.git.stagedFiles": "Archivos en staging",
+// ponytail: English placeholder until translated
+  "session.git.generateCommitMessage": "Generate message",
+  "session.git.generatingCommitMessage": "Generating…",
+  "session.git.generateFailed": "Failed to generate commit message",
+  "session.git.generateNoStaged": "No staged changes to summarize",
 
   "fileEditor.edit": "Edit",
   "fileEditor.revert": "Revert",

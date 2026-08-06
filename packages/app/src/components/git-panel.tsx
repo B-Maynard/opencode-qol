@@ -3,6 +3,7 @@ import { getFilename } from "@opencode-ai/core/util/path"
 import { Button } from "@opencode-ai/ui/button"
 import { Dialog } from "@opencode-ai/ui/dialog"
 import { Select } from "@opencode-ai/ui/select"
+import { Spinner } from "@opencode-ai/ui/spinner"
 import { TextField } from "@opencode-ai/ui/text-field"
 import { useDialog } from "@opencode-ai/ui/context/dialog"
 import { useLanguage } from "@/context/language"
@@ -33,6 +34,7 @@ export function GitPanel(props: {
   const [branches, setBranches] = createSignal<Branch[]>([])
   const [message, setMessage] = createSignal("")
   const [busy, setBusy] = createSignal(false)
+  const [generating, setGenerating] = createSignal(false)
 
   const refresh = async () => {
     const result = await sdk().client.vcs.branches()
@@ -85,6 +87,24 @@ export function GitPanel(props: {
       showError(language.t("session.git.commitFailed"), error)
     } finally {
       setBusy(false)
+    }
+  }
+
+  const generate = async () => {
+    if (!props.staged().length) {
+      showToast({ variant: "error", title: language.t("session.git.generateNoStaged") })
+      return
+    }
+    setGenerating(true)
+    try {
+      const result = await sdk().client.vcs.commitMessage()
+      const text = (result.data ?? "").trim()
+      if (!text) throw new Error("empty")
+      setMessage(text)
+    } catch (error) {
+      showError(language.t("session.git.generateFailed"), error)
+    } finally {
+      setGenerating(false)
     }
   }
 
@@ -220,10 +240,25 @@ export function GitPanel(props: {
           placeholder={language.t("session.git.commitMessage")}
         />
         <div class="flex gap-1.5">
-          <Button variant="primary" size="small" onClick={commit} disabled={busy() || !message().trim()}>
+          <Button
+            variant="secondary"
+            size="small"
+            onClick={generate}
+            disabled={busy() || generating()}
+          >
+            <Show when={generating()} fallback={language.t("session.git.generateCommitMessage")}>
+              <Spinner class="size-3.5" />
+            </Show>
+          </Button>
+          <Button
+            variant="primary"
+            size="small"
+            onClick={commit}
+            disabled={busy() || generating() || !message().trim()}
+          >
             {language.t("session.git.commit")}
           </Button>
-          <Button variant="secondary" size="small" onClick={push} disabled={busy()}>
+          <Button variant="secondary" size="small" onClick={push} disabled={busy() || generating()}>
             {language.t("session.git.push")}
           </Button>
         </div>

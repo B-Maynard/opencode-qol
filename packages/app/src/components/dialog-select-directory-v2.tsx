@@ -60,6 +60,7 @@ export function DialogSelectDirectoryV2(props: DialogSelectDirectoryV2Props) {
   const [error, setError] = createSignal(false)
   const [creating, setCreating] = createSignal(false)
   const [newFolder, setNewFolder] = createSignal("")
+  const [createError, setCreateError] = createSignal("")
   const [rootValid, setRootValid] = createSignal(false)
   const listings = new Map<string, Promise<Array<{ name: string; type: "file" | "directory" }> | undefined>>()
   const loads = createPriorityTaskQueue<Array<{ name: string; type: "file" | "directory" }> | undefined>(3)
@@ -240,13 +241,14 @@ export function DialogSelectDirectoryV2(props: DialogSelectDirectoryV2Props) {
     const base = root() || start() || home()
     if (!name || !base) return
     const target = joinPickerPath(base, name)
-    try {
-      await sdk.client.file.mkdir({ directory: base, path: target })
-      props.onSelect(props.multiple ? [target] : target)
-      dialog.close()
-    } catch {
-      setError(true)
+    const result = await sdk.client.file.mkdir({ directory: base, path: target })
+    if (result.error) {
+      const error = result.error as { data?: { message?: string }; message?: string }
+      setCreateError(error.data?.message || error.message || language.t("common.requestFailed"))
+      return
     }
+    props.onSelect(props.multiple ? [target] : target)
+    dialog.close()
   }
 
   onMount(() => {
@@ -290,6 +292,37 @@ export function DialogSelectDirectoryV2(props: DialogSelectDirectoryV2Props) {
     if (!container) return
     tree.render({ containerWrapper: container })
     tree.getFileTreeContainer()?.classList.add("directory-picker-v2-tree")
+    let touchStartY = 0
+    const getScroller = () =>
+      tree?.getFileTreeContainer()?.shadowRoot?.querySelector<HTMLElement>("[data-file-tree-virtualized-scroll]")
+    const scrollBy = (delta: number) => {
+      const scroller = getScroller()
+      if (!scroller) return false
+      const next = nextTreeScrollTop(scroller.scrollTop, delta, scroller.scrollHeight, scroller.clientHeight)
+      if (next === scroller.scrollTop) return false
+      scroller.scrollTop = next
+      scroller.dispatchEvent(new Event("scroll"))
+      return true
+    }
+    const onTouchStart = (event: TouchEvent) => {
+      const touch = event.touches[0]
+      if (!touch || !getScroller()) return
+      touchStartY = touch.clientY
+    }
+    const onTouchMove = (event: TouchEvent) => {
+      const touch = event.touches[0]
+      if (!touch) return
+      const deltaY = touchStartY - touch.clientY
+      touchStartY = touch.clientY
+      if (!scrollBy(deltaY)) return
+      event.preventDefault()
+    }
+    container.addEventListener("touchstart", onTouchStart, { passive: true })
+    container.addEventListener("touchmove", onTouchMove, { passive: false })
+    onCleanup(() => {
+      container.removeEventListener("touchstart", onTouchStart)
+      container.removeEventListener("touchmove", onTouchMove)
+    })
   })
 
   createEffect(() => {
@@ -357,7 +390,10 @@ export function DialogSelectDirectoryV2(props: DialogSelectDirectoryV2Props) {
                   autocomplete="off"
                   spellcheck={false}
                   placeholder={language.t("dialog.directory.folderName")}
-                  onInput={(event) => setNewFolder(cleanPickerInput(event.currentTarget.value))}
+                  onInput={(event) => {
+                    setNewFolder(cleanPickerInput(event.currentTarget.value))
+                    setCreateError("")
+                  }}
                   onKeyDown={(event) => {
                     if (event.key === "Enter") void createFolder()
                     if (event.key === "Escape") setCreating(false)
@@ -366,6 +402,11 @@ export function DialogSelectDirectoryV2(props: DialogSelectDirectoryV2Props) {
                 <ButtonV2 size="small" variant="contrast" onClick={() => void createFolder()}>
                   {language.t("dialog.directory.createFolder")}
                 </ButtonV2>
+                <Show when={createError()}>
+                  <span role="alert" class="text-xs text-v2-state-fg-danger max-w-56 truncate" title={createError()}>
+                    {createError()}
+                  </span>
+                </Show>
               </div>
             </Show>
           </div>

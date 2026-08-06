@@ -396,6 +396,8 @@ import type {
   VcsCheckoutErrors,
   VcsCheckoutResponses,
   VcsCommitErrors,
+  VcsCommitMessageErrors,
+  VcsCommitMessageResponses,
   VcsCommitResponses,
   VcsDiffErrors,
   VcsDiffRawErrors,
@@ -2280,6 +2282,36 @@ export class Vcs extends HeyApiClient {
         ...options?.headers,
         ...params.headers,
       },
+    })
+  }
+
+  /**
+   * Generate VCS commit message
+   *
+   * Generate a conventional commit message for the staged changes.
+   */
+  public commitMessage<ThrowOnError extends boolean = false>(
+    parameters?: {
+      directory?: string
+      workspace?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "query", key: "directory" },
+            { in: "query", key: "workspace" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<VcsCommitMessageResponses, VcsCommitMessageErrors, ThrowOnError>({
+      url: "/vcs/commit-message",
+      ...options,
+      ...params,
     })
   }
 

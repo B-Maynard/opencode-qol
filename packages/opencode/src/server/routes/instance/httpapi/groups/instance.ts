@@ -51,6 +51,17 @@ export class ApiVcsCommitError extends Schema.ErrorClass<ApiVcsCommitError>("Vcs
   { httpApiStatus: 400 },
 ) {}
 
+export class ApiVcsCommitMessageError extends Schema.ErrorClass<ApiVcsCommitMessageError>("VcsCommitMessageError")(
+  {
+    name: Schema.Literal("VcsCommitMessageError"),
+    data: Schema.Struct({
+      message: Schema.String,
+      reason: Schema.Literals(["non-git", "nothing-to-commit", "no-model", "generation-failed"]),
+    }),
+  },
+  { httpApiStatus: 400 },
+) {}
+
 export class ApiVcsPushError extends Schema.ErrorClass<ApiVcsPushError>("VcsPushError")(
   {
     name: Schema.Literal("VcsPushError"),
@@ -82,6 +93,7 @@ export const InstancePaths = {
   vcsDiffRaw: "/vcs/diff/raw",
   vcsApply: "/vcs/apply",
   vcsCommit: "/vcs/commit",
+  vcsCommitMessage: "/vcs/commit-message",
   vcsStage: "/vcs/stage",
   vcsUnstage: "/vcs/unstage",
   vcsStaged: "/vcs/staged",
@@ -186,6 +198,18 @@ export const InstanceApi = HttpApi.make("instance")
             identifier: "vcs.commit",
             summary: "Commit VCS changes",
             description: "Stage and commit the current working tree changes.",
+          }),
+        ),
+        HttpApiEndpoint.post("vcsCommitMessage", InstancePaths.vcsCommitMessage, {
+          query: WorkspaceRoutingQuery,
+          payload: [HttpApiSchema.NoContent],
+          success: described(Schema.String, "Generated VCS commit message"),
+          error: ApiVcsCommitMessageError,
+        }).annotateMerge(
+          OpenApi.annotations({
+            identifier: "vcs.commitMessage",
+            summary: "Generate VCS commit message",
+            description: "Generate a conventional commit message for the staged changes.",
           }),
         ),
         HttpApiEndpoint.post("vcsStage", InstancePaths.vcsStage, {

@@ -31,6 +31,14 @@ export const roots = (store: SessionStore) =>
 
 export const sortedRootSessions = (store: SessionStore, now: number) => roots(store).sort(sortSessions(now))
 
+export const sessionBelongsToProject = (
+  project: { id?: string; worktree: string; sandboxes?: string[] },
+  session: Session,
+) =>
+  (project.id ? session.projectID === project.id : false) ||
+  pathKey(session.directory) === pathKey(project.worktree) ||
+  (project.sandboxes ?? []).some((sandbox) => pathKey(sandbox) === pathKey(session.directory))
+
 export const latestRootSession = (stores: SessionStore[], now: number) =>
   stores.flatMap(roots).sort(sortSessions(now))[0]
 

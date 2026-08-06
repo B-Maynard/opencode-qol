@@ -170,7 +170,14 @@ export const fileHandlers = HttpApiBuilder.group(InstanceHttpApi, "file", (handl
       const target = path.resolve(directory, ctx.payload.path)
       const exists = yield* FSUtil.Service.use((fs) => fs.existsSafe(target))
       if (!exists) {
-        yield* FSUtil.Service.use((fs) => fs.makeDirectory(target, { recursive: true })).pipe(Effect.orDie)
+        yield* FSUtil.Service.use((fs) => fs.makeDirectory(target, { recursive: true })).pipe(
+          Effect.catch((cause) =>
+            new FileWriteError({
+              name: "FileWriteError",
+              data: { reason: "not-a-file", message: `Failed to create directory: ${cause.message}` },
+            }),
+          ),
+        )
       }
       return { created: !exists }
     })

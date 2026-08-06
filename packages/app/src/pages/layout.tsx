@@ -65,6 +65,7 @@ import {
   effectiveWorkspaceOrder,
   errorMessage,
   latestRootSession,
+  sessionBelongsToProject,
   sortedRootSessions,
 } from "./layout/helpers"
 import {
@@ -587,14 +588,32 @@ export default function LegacyLayout(props: ParentProps) {
   const visibleSessionDirs = createMemo(() => {
     const project = currentProject()
     if (!project) return [] as string[]
-    if (!workspaceSetting()) return [project.worktree]
 
     const activeDir = currentDir()
-    return workspaceIds(project).filter((directory) => {
-      const expanded = store.workspaceExpanded[directory] ?? directory === project.worktree
-      const active = pathKey(directory) === pathKey(activeDir)
-      return expanded || active
-    })
+    const base = workspaceSetting()
+      ? workspaceIds(project).filter((directory) => {
+          const expanded = store.workspaceExpanded[directory] ?? directory === project.worktree
+          const active = pathKey(directory) === pathKey(activeDir)
+          return expanded || active
+        })
+      : [project.worktree]
+
+    const dirs = [...base]
+    const seen = new Set(dirs.map(pathKey))
+    const append = (directory: string | undefined) => {
+      if (!directory) return
+      const key = pathKey(directory)
+      if (seen.has(key)) return
+      seen.add(key)
+      dirs.push(directory)
+    }
+
+    append(activeDir)
+    for (const session of Object.values(serverSync().session.data.info)) {
+      if (!session || !sessionBelongsToProject(project, session)) continue
+      append(session.directory)
+    }
+    return dirs
   })
 
   createEffect(() => {
