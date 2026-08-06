@@ -42,6 +42,8 @@ export function SessionFileBrowserTab(props: {
   staged?: () => string[]
   onStage?: (files: string[]) => void
   onUnstage?: (files: string[]) => void
+  onCommitSuccess?: () => void
+  onPushSuccess?: () => void
 }) {
   const file = useFile()
   const language = useLanguage()
@@ -52,18 +54,7 @@ export function SessionFileBrowserTab(props: {
   const resultsID = `session-file-browser-results-${createUniqueId()}`
   const [filter, setFilter] = createSignal("")
   const [explicitHighlight, setExplicitHighlight] = createSignal<string>()
-  const [userPicked, setUserPicked] = createSignal(false)
-  const [mode, setMode] = createSignal<"files" | "git">(
-    settings.general.programmingMode() ? "git" : "files",
-  )
-  // ponytail: sticky default — follow the programming-mode setting until the
-  // user picks a mode explicitly.
-  createEffect(
-    on(settings.general.programmingMode, (enabled) => {
-      if (userPicked()) return
-      setMode(enabled ? "git" : "files")
-    }),
-  )
+  const [mode, setMode] = createSignal<"files" | "git">("files")
   const sidebarOpened = () => props.placeholder || props.state.sidebarOpened()
   const query = createMemo(() => filter().trim())
   const search = createQuery(() => {
@@ -122,30 +113,22 @@ export function SessionFileBrowserTab(props: {
           transition={props.state.sidebarTransition()}
           title={<span class="truncate">{title()}</span>}
           stats={
-            <Show when={!settings.general.programmingMode()}>
-              <div class="flex gap-1">
-                <Button
-                  size="small"
-                  variant={mode() === "files" ? "primary" : "secondary"}
-                  onClick={() => {
-                    setUserPicked(true)
-                    setMode("files")
-                  }}
-                >
-                  {language.t("session.files.all")}
-                </Button>
-                <Button
-                  size="small"
-                  variant={mode() === "git" ? "primary" : "secondary"}
-                  onClick={() => {
-                    setUserPicked(true)
-                    setMode("git")
-                  }}
-                >
-                  {language.t("session.git.tab")}
-                </Button>
-              </div>
-            </Show>
+            <div class="flex gap-1">
+              <Button
+                size="small"
+                variant={mode() === "files" ? "primary" : "secondary"}
+                onClick={() => setMode("files")}
+              >
+                {language.t("session.files.all")}
+              </Button>
+              <Button
+                size="small"
+                variant={mode() === "git" ? "primary" : "secondary"}
+                onClick={() => setMode("git")}
+              >
+                {language.t("session.git.tab")}
+              </Button>
+            </div>
           }
           filter={filter()}
           onFilterChange={setFilter}
@@ -159,7 +142,7 @@ export function SessionFileBrowserTab(props: {
           onWidthChange={props.state.resizeSidebar}
         >
           <Show
-            when={mode() === "files" && !settings.general.programmingMode()}
+            when={mode() === "files"}
             fallback={
               <GitPanel
                 files={() => props.diffs?.() ?? []}
@@ -167,6 +150,8 @@ export function SessionFileBrowserTab(props: {
                 staged={() => props.staged?.() ?? []}
                 onStage={(files) => props.onStage?.(files)}
                 onUnstage={(files) => props.onUnstage?.(files)}
+                onCommitSuccess={props.onCommitSuccess}
+                onPushSuccess={props.onPushSuccess}
               />
             }
           >
@@ -225,7 +210,7 @@ export function SessionFileBrowserTab(props: {
           <SessionFilePanelV2Empty>
             <div class="flex flex-col items-center gap-3 text-center text-text-weak">
               <Icon name="file-tree" size="large" />
-              <div class="text-14-medium text-text-strong">{language.t("command.file.open")}</div>
+              <div class="text-14-medium text-text-strong">{language.t("session.tab.code")}</div>
               <div class="text-13-regular">{language.t("session.files.selectToOpen")}</div>
             </div>
           </SessionFilePanelV2Empty>

@@ -12,12 +12,20 @@ import { showToast } from "@/utils/toast"
 type Branch = { name: string; current: boolean }
 const NEW_BRANCH_OPTION = "\0new-branch"
 
+const showError = (fallback: string, error: unknown) => {
+  const message =
+    (error as { data?: { message?: string } })?.data?.message ?? fallback
+  showToast({ variant: "error", title: message })
+}
+
 export function GitPanel(props: {
   files: () => { file: string }[]
   onSelectFile?: (path: string) => void
   staged: () => string[]
   onStage: (files: string[]) => void
   onUnstage: (files: string[]) => void
+  onCommitSuccess?: () => void
+  onPushSuccess?: () => void
 }) {
   const language = useLanguage()
   const sdk = useSDK()
@@ -41,6 +49,8 @@ export function GitPanel(props: {
     props.files().filter((file) => !stagedSet().has(file.file)).map((file) => file.file),
   )
   const allStagedPaths = () => props.staged()
+  const stagedFiles = createMemo(() => props.files().filter((file) => stagedSet().has(file.file)))
+  const unstagedFiles = createMemo(() => props.files().filter((file) => !stagedSet().has(file.file)))
 
   const checkout = async (name: string, create = false, base?: string) => {
     setBusy(true)
@@ -70,8 +80,9 @@ export function GitPanel(props: {
       await sdk().client.vcs.commit({ message: text })
       setMessage("")
       showToast({ variant: "success", title: language.t("session.git.committed") })
-    } catch {
-      showToast({ variant: "error", title: language.t("session.git.commitFailed") })
+      props.onCommitSuccess?.()
+    } catch (error) {
+      showError(language.t("session.git.commitFailed"), error)
     } finally {
       setBusy(false)
     }
@@ -82,8 +93,9 @@ export function GitPanel(props: {
     try {
       await sdk().client.vcs.push({})
       showToast({ variant: "success", title: language.t("session.git.pushed") })
-    } catch {
-      showToast({ variant: "error", title: language.t("session.git.pushFailed") })
+      props.onPushSuccess?.()
+    } catch (error) {
+      showError(language.t("session.git.pushFailed"), error)
     } finally {
       setBusy(false)
     }
@@ -118,28 +130,20 @@ export function GitPanel(props: {
         </Show>
       </div>
 
-      <Show when={props.files().length > 0}>
+      <Show when={stagedFiles().length > 0}>
         <div class="flex flex-col gap-1.5">
           <div class="flex items-center justify-between gap-2">
+            <span class="text-12-regular text-text-weak">{language.t("session.git.stagedFiles")}</span>
             <Button
               size="small"
               variant="secondary"
-              disabled={props.files().length === 0}
-              onClick={() =>
-                allStaged() ? props.onUnstage(allStagedPaths()) : props.onStage(allUnstagedPaths())
-              }
+              onClick={() => props.onUnstage(allStagedPaths())}
             >
-              {allStaged() ? language.t("session.git.unstageAll") : language.t("session.git.stageAll")}
+              {language.t("session.git.unstageAll")}
             </Button>
-            <span class="text-12-regular text-text-weak">
-              {language.t("session.git.stagedCount", { staged: stagedCount(), total: props.files().length })}
-            </span>
           </div>
-          <span class="text-12-regular text-text-weak">
-            {language.t("session.review.filesChanged", { count: props.files().length })}
-          </span>
           <ul class="flex flex-col gap-0.5">
-            <For each={props.files()}>
+            <For each={stagedFiles()}>
               {(file) => (
                 <li class="flex items-center gap-1">
                   <button
@@ -154,14 +158,53 @@ export function GitPanel(props: {
                   <Button
                     size="small"
                     variant="ghost"
-                    onClick={() =>
-                      stagedSet().has(file.file)
-                        ? props.onUnstage([file.file])
-                        : props.onStage([file.file])
-                    }
+                    icon="minus-small"
+                    title={language.t("session.git.unstage")}
+                    aria-label={language.t("session.git.unstage")}
+                    onClick={() => props.onUnstage([file.file])}
+                  />
+                </li>
+              )}
+            </For>
+          </ul>
+        </div>
+      </Show>
+
+      <Show when={unstagedFiles().length > 0}>
+        <div class="flex flex-col gap-1.5">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-12-regular text-text-weak">
+              {language.t("session.review.filesChanged", { count: unstagedFiles().length })}
+            </span>
+            <Button
+              size="small"
+              variant="secondary"
+              onClick={() => props.onStage(allUnstagedPaths())}
+            >
+              {language.t("session.git.stageAll")}
+            </Button>
+          </div>
+          <ul class="flex flex-col gap-0.5">
+            <For each={unstagedFiles()}>
+              {(file) => (
+                <li class="flex items-center gap-1">
+                  <button
+                    type="button"
+                    class="min-w-0 flex-1 truncate rounded px-1.5 py-1 text-left text-12-regular text-text-strong hover:bg-surface-raised-base-hover disabled:cursor-default disabled:opacity-60"
+                    disabled={!props.onSelectFile}
+                    onClick={() => props.onSelectFile?.(file.file)}
+                    title={file.file}
                   >
-                    {stagedSet().has(file.file) ? language.t("session.git.unstage") : language.t("session.git.stage")}
-                  </Button>
+                    {getFilename(file.file)}
+                  </button>
+                  <Button
+                    size="small"
+                    variant="ghost"
+                    icon="plus-small"
+                    title={language.t("session.git.stage")}
+                    aria-label={language.t("session.git.stage")}
+                    onClick={() => props.onStage([file.file])}
+                  />
                 </li>
               )}
             </For>

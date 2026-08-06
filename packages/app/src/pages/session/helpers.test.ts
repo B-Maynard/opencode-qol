@@ -186,7 +186,7 @@ describe("createSessionTabs", () => {
       expect(result.openedTabs()).toEqual(["file://src/a.ts"])
       expect(result.activeTab()).toBe(SESSION_OPEN_FILE_TAB)
       expect(result.activeFileTab()).toBeUndefined()
-      expect(result.closableTab()).toBe(SESSION_OPEN_FILE_TAB)
+      expect(result.closableTab()).toBeUndefined()
       dispose()
     })
   })

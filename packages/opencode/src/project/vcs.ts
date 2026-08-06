@@ -365,7 +365,7 @@ export interface Interface {
   readonly stage: (input: StageInput) => Effect.Effect<StageResult, VcsStageError>
   readonly unstage: (input: UnstageInput) => Effect.Effect<UnstageResult, VcsUnstageError>
   readonly staged: () => Effect.Effect<string[]>
-  readonly push: (input: PushInput) => Effect.Effect<PushResult, PushError>
+  readonly push: (input: PushInput | undefined) => Effect.Effect<PushResult, PushError>
   readonly branches: () => Effect.Effect<BranchInfo[]>
   readonly checkout: (input: CheckoutInput) => Effect.Effect<Info, CheckoutError>
 }
@@ -525,7 +525,7 @@ const layer: Layer.Layer<Service, never, Git.Service | EventV2Bridge.Service> = 
         // so `git add -- <path>` works when ctx.directory is a subdir of the repo.
         const toplevel = (yield* git.run(["rev-parse", "--show-toplevel"], { cwd: ctx.directory })).text().trim()
         const result = yield* git.run(
-          input.files && input.files.length > 0 ? ["add", "--", ...input.files] : ["add", "-A", "--"],
+          input.files && input.files.length > 0 ? ["add", "--", ...input.files] : ["add", "-A", "--", "."],
           { cwd: toplevel },
         )
         if (result.exitCode !== 0) {
@@ -547,7 +547,7 @@ const layer: Layer.Layer<Service, never, Git.Service | EventV2Bridge.Service> = 
         // so `git add -- <path>` works when ctx.directory is a subdir of the repo.
         const toplevel = (yield* git.run(["rev-parse", "--show-toplevel"], { cwd: ctx.directory })).text().trim()
         const result = yield* git.run(
-          input.files && input.files.length > 0 ? ["reset", "--", ...input.files] : ["reset"],
+          input.files && input.files.length > 0 ? ["reset", "--", ...input.files] : ["reset", "--", "."],
           { cwd: toplevel },
         )
         if (result.exitCode !== 0) {
@@ -561,13 +561,13 @@ const layer: Layer.Layer<Service, never, Git.Service | EventV2Bridge.Service> = 
       staged: Effect.fn("Vcs.staged")(function* () {
         const ctx = yield* InstanceState.context
         if (ctx.project.vcs !== "git") return []
-        const result = yield* git.run(["diff", "--cached", "--name-only"], { cwd: ctx.directory })
+        const result = yield* git.run(["diff", "--cached", "--name-only", "--", "."], { cwd: ctx.directory })
         return result
           .text()
           .split("\n")
           .filter((line) => line.length > 0)
       }),
-      push: Effect.fn("Vcs.push")(function* (input: PushInput) {
+      push: Effect.fn("Vcs.push")(function* (input: PushInput | undefined) {
         const ctx = yield* InstanceState.context
         if (ctx.project.vcs !== "git") {
           return yield* new PushError({
@@ -576,12 +576,23 @@ const layer: Layer.Layer<Service, never, Git.Service | EventV2Bridge.Service> = 
           })
         }
         const current = yield* InstanceState.use(state, (x) => x.current)
-        const ref = input.branch ?? current
-        const result = yield* git.run(["push", input.remote ?? "origin", ...(ref ? [ref] : [])], {
-          cwd: ctx.directory,
-        })
+        const ref = input?.branch ?? current
+        const remote = input?.remote ?? "origin"
+
+        // ponytail: detect missing upstream so new branches auto-set tracking.
+        // @{u} resolves to the configured upstream; exit 0 = set, anything else = unset.
+        const upstreamCheck = ref
+          ? yield* git.run(["rev-parse", "--abbrev-ref", "--symbolic-full-name", `${ref}@{u}`], {
+              cwd: ctx.directory,
+            })
+          : undefined
+        const hasUpstream = upstreamCheck?.exitCode === 0
+
+        const pushArgs = ["push", ...(hasUpstream ? [] : ["-u"]), remote, ...(ref ? [ref] : [])]
+        const result = yield* git.run(pushArgs, { cwd: ctx.directory })
         if (result.exitCode !== 0) {
-          return yield* new PushError({ message: "Push failed", reason: "push-failed" })
+          const stderr = result.text() || "Push failed"
+          return yield* new PushError({ message: stderr, reason: "push-failed" })
         }
         return { pushed: true }
       }),

@@ -441,6 +441,9 @@ export const dict = {
   "dialog.directory.root": "Kök",
   "dialog.directory.parent": "Üst klasör",
   "dialog.directory.readError": "Bu klasör okunamıyor",
+  "dialog.directory.newFolder": "New folder",
+  "dialog.directory.createFolder": "Create folder",
+  "dialog.directory.folderName": "Folder name",
 
   "dialog.server.title": "Sunucular",
   "dialog.server.description": "Bu uygulamanın hangi OpenCode sunucusuna bağlanacağını değiştirin.",
@@ -742,6 +745,7 @@ export const dict = {
   "session.tab.session": "Oturum",
   "session.tab.review": "İnceleme",
   "session.tab.context": "Bağlam",
+  "session.tab.code": "Kod",
   "session.tab.unknown": "Bilinmeyen Oturum",
   "session.panel.reviewAndFiles": "İnceleme ve dosyalar",
   "session.error.notFound": "Bu oturum bulunamıyor",
@@ -782,6 +786,7 @@ export const dict = {
   "session.git.noBranches": "No branches found",
   "session.git.newBranchOption": "New branch...",
   "session.git.createFrom": "Create from",
+  "session.git.stagedFiles": "Sahneye alınmış dosyalar",
 
   "fileEditor.edit": "Edit",
   "fileEditor.revert": "Revert",

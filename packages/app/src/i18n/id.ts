@@ -437,6 +437,9 @@ export const dict = {
   "dialog.directory.root": "Akar",
   "dialog.directory.parent": "Induk",
   "dialog.directory.readError": "Tidak dapat membaca folder ini",
+  "dialog.directory.newFolder": "New folder",
+  "dialog.directory.createFolder": "Create folder",
+  "dialog.directory.folderName": "Folder name",
 
   "app.server.unreachable": "Tidak dapat menjangkau {{server}}",
   "app.server.retrying": "Mencoba ulang secara otomatis...",
@@ -756,6 +759,7 @@ export const dict = {
   "session.tab.session": "Sesi",
   "session.tab.review": "Tinjauan",
   "session.tab.context": "Konteks",
+  "session.tab.code": "Kode",
   "session.tab.unknown": "Sesi Tidak Dikenal",
   "session.panel.reviewAndFiles": "Tinjauan dan berkas",
   "session.error.notFound": "Sesi ini tidak dapat ditemukan",
@@ -800,6 +804,7 @@ export const dict = {
   "session.git.noBranches": "No branches found",
   "session.git.newBranchOption": "New branch...",
   "session.git.createFrom": "Create from",
+  "session.git.stagedFiles": "File yang di-staging",
 
   "fileEditor.edit": "Edit",
   "fileEditor.revert": "Revert",

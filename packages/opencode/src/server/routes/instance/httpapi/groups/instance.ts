@@ -224,7 +224,7 @@ export const InstanceApi = HttpApi.make("instance")
         ),
         HttpApiEndpoint.post("vcsPush", InstancePaths.vcsPush, {
           query: WorkspaceRoutingQuery,
-          payload: Vcs.PushInput,
+          payload: [HttpApiSchema.NoContent, Vcs.PushInput],
           success: described(Vcs.PushResult, "VCS pushed"),
           error: ApiVcsPushError,
         }).annotateMerge(

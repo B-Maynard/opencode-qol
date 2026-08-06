@@ -2312,6 +2312,10 @@ export type FileWriteError = {
   }
 }
 
+export type FileMkdirResult = {
+  created: boolean
+}
+
 export type Path = {
   home: string
   state: string
@@ -8163,6 +8167,36 @@ export type FileWriteResponses = {
 }
 
 export type FileWriteResponse = FileWriteResponses[keyof FileWriteResponses]
+
+export type FileMkdirData = {
+  body?: {
+    path: string
+  }
+  path?: never
+  query?: {
+    directory?: string
+    workspace?: string
+  }
+  url: "/file/mkdir"
+}
+
+export type FileMkdirErrors = {
+  /**
+   * FileWriteError | InvalidRequestError
+   */
+  400: FileWriteError | InvalidRequestError
+}
+
+export type FileMkdirError = FileMkdirErrors[keyof FileMkdirErrors]
+
+export type FileMkdirResponses = {
+  /**
+   * Directory created
+   */
+  200: FileMkdirResult
+}
+
+export type FileMkdirResponse = FileMkdirResponses[keyof FileMkdirResponses]
 
 export type InstanceDisposeData = {
   body?: never

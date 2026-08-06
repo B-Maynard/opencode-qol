@@ -438,6 +438,9 @@ export const dict = {
   "dialog.directory.root": "Корінь",
   "dialog.directory.parent": "Батьківська папка",
   "dialog.directory.readError": "Не вдалося прочитати цю папку",
+  "dialog.directory.newFolder": "New folder",
+  "dialog.directory.createFolder": "Create folder",
+  "dialog.directory.folderName": "Folder name",
 
   "app.server.unreachable": "Не вдалося зв'язатися із {{server}}",
   "app.server.retrying": "Автоматична повторна спроба...",
@@ -761,6 +764,7 @@ export const dict = {
   "session.tab.session": "Сесія",
   "session.tab.review": "Огляд",
   "session.tab.context": "Контекст",
+  "session.tab.code": "Код",
   "session.tab.unknown": "Невідома сесія",
   "session.panel.reviewAndFiles": "Огляд і файли",
   "session.error.notFound": "Цю сесію не знайдено",
@@ -804,6 +808,7 @@ export const dict = {
   "session.git.noBranches": "No branches found",
   "session.git.newBranchOption": "New branch...",
   "session.git.createFrom": "Create from",
+  "session.git.stagedFiles": "Файли в черзі",
 
   "fileEditor.edit": "Edit",
   "fileEditor.revert": "Revert",

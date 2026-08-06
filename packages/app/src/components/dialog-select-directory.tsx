@@ -3,12 +3,14 @@ import { Dialog } from "@opencode-ai/ui/dialog"
 import { FileIcon } from "@opencode-ai/ui/file-icon"
 import { List } from "@opencode-ai/ui/list"
 import type { ListRef } from "@opencode-ai/ui/list"
+import { Button } from "@opencode-ai/ui/button"
+import { TextInputV2 } from "@opencode-ai/ui/v2/text-input-v2"
 import { getDirectory, getFilename } from "@opencode-ai/core/util/path"
-import { createMemo, createResource, createSignal } from "solid-js"
+import { createMemo, createResource, createSignal, Show } from "solid-js"
 import { useLanguage } from "@/context/language"
 import { ServerConnection } from "@/context/server"
 import { useGlobal } from "@/context/global"
-import { cleanPickerInput, createDirectorySearch, displayPickerPath } from "./directory-picker-domain"
+import { cleanPickerInput, createDirectorySearch, displayPickerPath, joinPickerPath } from "./directory-picker-domain"
 import type { Path } from "@opencode-ai/sdk/v2/client"
 
 interface DialogSelectDirectoryProps {
@@ -57,6 +59,9 @@ export function DialogSelectDirectory(props: DialogSelectDirectoryProps) {
   const language = useLanguage()
 
   const [filter, setFilter] = createSignal("")
+  const [creating, setCreating] = createSignal(false)
+  const [newFolder, setNewFolder] = createSignal("")
+  const [error, setError] = createSignal(false)
   let list: ListRef | undefined
 
   const missingHome = createMemo(() => !sync.data.path.home)
@@ -128,8 +133,59 @@ export function DialogSelectDirectory(props: DialogSelectDirectoryProps) {
     dialog.close()
   }
 
+  async function createFolder() {
+    const name = cleanPickerInput(newFolder()).replace(/[/\\]/g, "")
+    const currentFilter = cleanPickerInput(filter())
+    // If the user navigated to a directory via the search, use that as the base
+    const base =
+      currentFilter.startsWith("/") || /^[A-Za-z]:/.test(currentFilter) ? currentFilter.replace(/\/+$/, "") : start()
+    if (!name || !base) return
+    const target = joinPickerPath(base, name)
+    try {
+      await sdk.client.file.mkdir({ directory: base, path: target })
+      props.onSelect(props.multiple ? [target] : target)
+      dialog.close()
+    } catch {
+      setError(true)
+    }
+  }
+
   return (
     <Dialog title={props.title ?? language.t("command.project.open")}>
+      <div class="px-3 pt-3 flex items-center gap-2">
+        <Show
+          when={creating()}
+          fallback={
+            <Button size="small" variant="ghost" onClick={() => setCreating(true)}>
+              {language.t("dialog.directory.newFolder")}
+            </Button>
+          }
+        >
+          <div class="flex items-center gap-2">
+            <span class="text-12-regular text-text-weak whitespace-nowrap">
+              {displayPickerPath(start() ?? "", "", home())}/
+            </span>
+            <TextInputV2
+              value={newFolder()}
+              autofocus
+              autocomplete="off"
+              spellcheck={false}
+              placeholder={language.t("dialog.directory.folderName")}
+              onInput={(event) => setNewFolder(cleanPickerInput(event.currentTarget.value))}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") void createFolder()
+                if (event.key === "Escape") setCreating(false)
+              }}
+            />
+            <Button size="small" variant="primary" onClick={() => void createFolder()}>
+              {language.t("dialog.directory.createFolder")}
+            </Button>
+          </div>
+        </Show>
+        <Show when={error()}>
+          <span class="text-13-regular text-text-danger-base">{language.t("dialog.directory.readError")}</span>
+        </Show>
+      </div>
       <List
         class="px-3"
         search={{ placeholder: language.t("dialog.directory.search.placeholder"), autofocus: true }}

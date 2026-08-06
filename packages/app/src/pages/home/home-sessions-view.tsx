@@ -19,7 +19,7 @@ import {
   type OpenSessionOptions,
 } from "./home-sessions-controller"
 
-const SHOW_HOME_SESSION_ARCHIVE = false
+const SHOW_HOME_SESSION_ARCHIVE = true
 const HOME_SECTION_LABEL = "text-v2-text-text-muted [font-weight:440]"
 const HOME_SESSION_SEARCH_RESULTS_ID = "home-session-search-results"
 
@@ -54,6 +54,7 @@ export type HomeSessionsViewProps = {
   onCreateSession: () => void
   onOpenSession: (session: Session, options?: OpenSessionOptions) => void
   onArchiveSession: (session: Session) => Promise<void>
+  onDeleteSession: (session: Session) => Promise<void>
   onSetHoverTarget: (element: HTMLElement) => void
   onSetThumbTrack: (element: HTMLDivElement) => void
   onSetContent: (element: HTMLDivElement) => void
@@ -460,6 +461,20 @@ function HomeSessionRow(props: HomeSessionsViewProps & { record: HomeSessionReco
             group-hover/session:opacity-100 focus-within:opacity-100
           `}
         >
+          <TooltipV2 class="flex shrink-0 items-center" placement="bottom" value={props.language.t("common.delete")}>
+            <IconButtonV2
+              data-action="home-session-delete"
+              variant="ghost-muted"
+              size="large"
+              icon={<IconV2 name="trash" />}
+              aria-label={props.language.t("common.delete")}
+              onClick={(event) => {
+                event.preventDefault()
+                event.stopPropagation()
+                void props.onDeleteSession(props.record.session)
+              }}
+            />
+          </TooltipV2>
           <TooltipV2 class="flex shrink-0 items-center" placement="bottom" value={props.language.t("common.archive")}>
             <IconButtonV2
               data-action="home-session-archive"

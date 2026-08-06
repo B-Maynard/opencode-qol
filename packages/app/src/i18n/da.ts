@@ -334,6 +334,9 @@ export const dict = {
   "dialog.directory.root": "Rod",
   "dialog.directory.parent": "Overordnet",
   "dialog.directory.readError": "Denne mappe kan ikke læses",
+  "dialog.directory.newFolder": "New folder",
+  "dialog.directory.createFolder": "Create folder",
+  "dialog.directory.folderName": "Folder name",
 
   "dialog.server.title": "Servere",
   "dialog.server.description": "Skift hvilken OpenCode-server denne app forbinder til.",
@@ -618,6 +621,7 @@ export const dict = {
   "session.tab.session": "Session",
   "session.tab.review": "Gennemgang",
   "session.tab.context": "Kontekst",
+  "session.tab.code": "Kode",
   "session.tab.unknown": "Ukendt session",
   "session.panel.reviewAndFiles": "Gennemgang og filer",
   "session.error.notFound": "Denne session kan ikke findes",
@@ -657,6 +661,7 @@ export const dict = {
   "session.git.noBranches": "No branches found",
   "session.git.newBranchOption": "New branch...",
   "session.git.createFrom": "Create from",
+  "session.git.stagedFiles": "Staged filer",
 
   "fileEditor.edit": "Edit",
   "fileEditor.revert": "Revert",

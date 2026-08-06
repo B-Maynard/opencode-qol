@@ -438,6 +438,9 @@ export const dict = {
   "dialog.directory.root": "Raíz",
   "dialog.directory.parent": "Carpeta superior",
   "dialog.directory.readError": "No se puede leer esta carpeta",
+  "dialog.directory.newFolder": "New folder",
+  "dialog.directory.createFolder": "Create folder",
+  "dialog.directory.folderName": "Folder name",
 
   "dialog.server.title": "Servidores",
   "dialog.server.description": "Cambiar el servidor de OpenCode al que se conecta esta aplicación.",
@@ -741,6 +744,7 @@ export const dict = {
   "session.tab.session": "Sesión",
   "session.tab.review": "Revisión",
   "session.tab.context": "Contexto",
+  "session.tab.code": "Código",
   "session.tab.unknown": "Sesión desconocida",
   "session.panel.reviewAndFiles": "Revisión y archivos",
   "session.error.notFound": "No se encuentra esta sesión",
@@ -781,6 +785,7 @@ export const dict = {
   "session.git.noBranches": "No branches found",
   "session.git.newBranchOption": "New branch...",
   "session.git.createFrom": "Create from",
+  "session.git.stagedFiles": "Archivos en staging",
 
   "fileEditor.edit": "Edit",
   "fileEditor.revert": "Revert",

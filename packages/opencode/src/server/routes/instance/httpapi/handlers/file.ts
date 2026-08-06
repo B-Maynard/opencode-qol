@@ -162,6 +162,19 @@ export const fileHandlers = HttpApiBuilder.group(InstanceHttpApi, "file", (handl
       return { written: true }
     })
 
+    // ponytail: mkdir is the "create a new project" path — by definition the target
+    // is outside any existing project scope. The auth layer gates the endpoint;
+    // OS permissions gate what we can actually create. No project-scope check.
+    const mkdir = Effect.fn("FileHttpApi.mkdir")(function* (ctx: { payload: { path: string } }) {
+      const directory = (yield* InstanceState.context).directory
+      const target = path.resolve(directory, ctx.payload.path)
+      const exists = yield* FSUtil.Service.use((fs) => fs.existsSafe(target))
+      if (!exists) {
+        yield* FSUtil.Service.use((fs) => fs.makeDirectory(target, { recursive: true })).pipe(Effect.orDie)
+      }
+      return { created: !exists }
+    })
+
     return handlers
       .handle("findText", findText)
       .handle("findFile", findFile)
@@ -170,5 +183,6 @@ export const fileHandlers = HttpApiBuilder.group(InstanceHttpApi, "file", (handl
       .handle("content", content)
       .handle("status", status)
       .handle("write", write)
+      .handle("mkdir", mkdir)
   }),
 ).pipe(Layer.provide(locationServiceMapLayer))

@@ -687,7 +687,7 @@ export default function Page() {
   )
   const vcsQuery = createQuery(() => {
     const mode = vcsMode()
-    const enabled = wantsReview() && sync().project?.vcs === "git"
+    const enabled = sync().project?.vcs === "git"
 
     return {
       queryKey: [...vcsKey(), mode] as const,
@@ -716,7 +716,14 @@ export default function Page() {
         startTransition(() => refetchStaged())
         refreshVcs()
       })
-      .catch((err) => console.error("vcs.stage failed", err))
+      .catch((err) => {
+        console.error("vcs.stage failed", err)
+        showToast({
+          variant: "error",
+          title: language.t("common.requestFailed"),
+          description: formatServerError(err, language.t),
+        })
+      })
   }
   const unstageFiles = (files: string[]) => {
     void sdk()
@@ -725,7 +732,18 @@ export default function Page() {
         startTransition(() => refetchStaged())
         refreshVcs()
       })
-      .catch((err) => console.error("vcs.unstage failed", err))
+      .catch((err) => {
+        console.error("vcs.unstage failed", err)
+        showToast({
+          variant: "error",
+          title: language.t("common.requestFailed"),
+          description: formatServerError(err, language.t),
+        })
+      })
+  }
+  const refreshVcsState = () => {
+    startTransition(() => refetchStaged())
+    refreshVcs()
   }
   const reviewDiffs = () => {
     if (reviewMode() === "git" || reviewMode() === "branch")
@@ -971,6 +989,18 @@ export default function Page() {
       () => {
         setStore(sessionViewState(settings.general.programmingMode() ? "git" : "changes"))
         setUi("pendingMessage", undefined)
+      },
+      { defer: true },
+    ),
+  )
+
+  // ponytail: refresh on tab switch so staging from one tab reflects in the other without waiting for the next file-watcher event.
+  createEffect(
+    on(
+      () => store.mobileChangesMode,
+      () => {
+        refreshVcs()
+        refetchStaged()
       },
       { defer: true },
     ),
@@ -2141,6 +2171,8 @@ export default function Page() {
                           staged={() => stagedFiles() ?? []}
                           onStage={stageFiles}
                           onUnstage={unstageFiles}
+                          onCommitSuccess={refreshVcsState}
+                          onPushSuccess={refreshVcsState}
                         />
                       </Show>
                       <Show when={!(canReview() && !nogit() && store.mobileChangesMode === "git")}>
@@ -2423,6 +2455,8 @@ export default function Page() {
               staged={() => stagedFiles() ?? []}
               onStage={stageFiles}
               onUnstage={unstageFiles}
+              onCommitSuccess={refreshVcsState}
+              onPushSuccess={refreshVcsState}
             />
           </Suspense>
         </Show>
@@ -2457,6 +2491,8 @@ export default function Page() {
                       staged={() => stagedFiles() ?? []}
                       onStage={stageFiles}
                       onUnstage={unstageFiles}
+                      onCommitSuccess={refreshVcsState}
+                      onPushSuccess={refreshVcsState}
                     />
                   </Suspense>
                 </div>

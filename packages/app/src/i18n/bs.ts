@@ -437,6 +437,9 @@ export const dict = {
   "dialog.directory.root": "Korijen",
   "dialog.directory.parent": "Nadređena fascikla",
   "dialog.directory.readError": "Nije moguće pročitati ovu fasciklu",
+  "dialog.directory.newFolder": "New folder",
+  "dialog.directory.createFolder": "Create folder",
+  "dialog.directory.folderName": "Folder name",
 
   "dialog.server.title": "Serveri",
   "dialog.server.description": "Promijeni na koji se OpenCode server ova aplikacija povezuje.",
@@ -738,6 +741,7 @@ export const dict = {
   "session.tab.session": "Sesija",
   "session.tab.review": "Pregled",
   "session.tab.context": "Kontekst",
+  "session.tab.code": "Kod",
   "session.tab.unknown": "Nepoznata sesija",
   "session.panel.reviewAndFiles": "Pregled i datoteke",
   "session.error.notFound": "Ova sesija nije pronađena",
@@ -778,6 +782,7 @@ export const dict = {
   "session.git.noBranches": "No branches found",
   "session.git.newBranchOption": "New branch...",
   "session.git.createFrom": "Create from",
+  "session.git.stagedFiles": "Staged datoteke",
 
   "fileEditor.edit": "Edit",
   "fileEditor.revert": "Revert",

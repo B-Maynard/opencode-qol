@@ -1,7 +1,7 @@
 import type { Session } from "@opencode-ai/sdk/v2/client"
 import { preloadMarkdown } from "@opencode-ai/session-ui/markdown-cache"
 import { useDialog } from "@opencode-ai/ui/context/dialog"
-import { useQuery } from "@tanstack/solid-query"
+import { useQuery, useQueryClient } from "@tanstack/solid-query"
 import { DateTime } from "luxon"
 import { type Accessor, createEffect, createMemo, createRoot, type JSX, startTransition } from "solid-js"
 import { produce } from "solid-js/store"
@@ -10,6 +10,7 @@ import {
   loadHomeSessionIndex,
   retainHomeSessions,
   type HomeSessionEvents,
+  type HomeSessionIndex,
 } from "@/context/global-sync/home-session-index"
 import type { LocalProject } from "@/context/layout"
 import { useLanguage } from "@/context/language"
@@ -20,6 +21,7 @@ import { useSessionTabAvatarState } from "@/pages/layout/project-avatar-state"
 import { pathKey } from "@/utils/path-key"
 import { showToast } from "@/utils/toast"
 import { Binary } from "@opencode-ai/core/util/binary"
+import { notifySessionTabsRemoved } from "@/components/titlebar-session-events"
 import { archiveHomeSession } from "../home-session-archive"
 import type { HomeController } from "./home-controller"
 
@@ -79,6 +81,7 @@ export function createHomeSessionsController(home: HomeController) {
     refetchOnMount: true,
     refetchOnReconnect: true,
   }))
+  const queryClient = useQueryClient()
   const indexedSessions = createMemo(() =>
     retainHomeSessions(
       homeSessions().sessions(sessionLoad.data, sessionEventLoad.data),
@@ -219,19 +222,56 @@ export function createHomeSessionsController(home: HomeController) {
               directory: session.directory,
               time: { archived: Date.now() },
             }),
-          remove: () =>
+          remove: () => {
             setStore(
               produce((draft) => {
                 const match = Binary.search(draft.session, session.id, (item) => item.id)
                 if (match.found) draft.session.splice(match.index, 1)
               }),
-            ),
+            )
+            queryClient.setQueryData<HomeSessionIndex>(homeSessions().indexKey, (prev) => {
+              if (!prev) return prev
+              return { ...prev, sessions: prev.sessions.filter((s) => s.id !== session.id) }
+            })
+          },
           onError: (cause) =>
             showToast({
               title: language.t("common.requestFailed"),
               description: errorMessage(cause, language.t("common.requestFailed")),
             }),
         })
+      },
+      delete: async (session: Session) => {
+        const conn = home.server.focused()
+        const ctx = home.server.focusedContext()
+        if (!conn || !ctx) return
+        const [, setStore] = ctx.sync.child(session.directory)
+        if ((await ctx.sdk.protocol) !== "v1") return
+        await ctx.sdk.client.session
+          .delete({ sessionID: session.id, directory: session.directory })
+          .then(() => {
+            setStore(
+              produce((draft) => {
+                const match = Binary.search(draft.session, session.id, (item) => item.id)
+                if (match.found) draft.session.splice(match.index, 1)
+              }),
+            )
+            queryClient.setQueryData<HomeSessionIndex>(homeSessions().indexKey, (prev) => {
+              if (!prev) return prev
+              return { ...prev, sessions: prev.sessions.filter((s) => s.id !== session.id) }
+            })
+            notifySessionTabsRemoved({
+              server: ServerConnection.key(conn),
+              directory: session.directory,
+              sessionIDs: [session.id],
+            })
+          })
+          .catch((cause) =>
+            showToast({
+              title: language.t("common.requestFailed"),
+              description: errorMessage(cause, language.t("common.requestFailed")),
+            }),
+          )
       },
     },
     tab: {

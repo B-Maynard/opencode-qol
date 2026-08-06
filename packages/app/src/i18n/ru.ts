@@ -435,6 +435,9 @@ export const dict = {
   "dialog.directory.root": "Корень",
   "dialog.directory.parent": "Родительская папка",
   "dialog.directory.readError": "Не удалось прочитать эту папку",
+  "dialog.directory.newFolder": "New folder",
+  "dialog.directory.createFolder": "Create folder",
+  "dialog.directory.folderName": "Folder name",
 
   "dialog.server.title": "Серверы",
   "dialog.server.description": "Выберите сервер OpenCode, к которому подключается приложение.",
@@ -738,6 +741,7 @@ export const dict = {
   "session.tab.session": "Сессия",
   "session.tab.review": "Обзор",
   "session.tab.context": "Контекст",
+  "session.tab.code": "Код",
   "session.tab.unknown": "Неизвестная сессия",
   "session.panel.reviewAndFiles": "Обзор и файлы",
   "session.error.notFound": "Эта сессия не найдена",
@@ -776,6 +780,7 @@ export const dict = {
   "session.git.noBranches": "No branches found",
   "session.git.newBranchOption": "New branch...",
   "session.git.createFrom": "Create from",
+  "session.git.stagedFiles": "Файлы в очереди",
 
   "fileEditor.edit": "Edit",
   "fileEditor.revert": "Revert",

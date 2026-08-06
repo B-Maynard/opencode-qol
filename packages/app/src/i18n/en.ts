@@ -340,6 +340,9 @@ export const dict = {
   "dialog.directory.root": "Root",
   "dialog.directory.parent": "Parent",
   "dialog.directory.readError": "Unable to read this folder",
+  "dialog.directory.newFolder": "New folder",
+  "dialog.directory.createFolder": "Create folder",
+  "dialog.directory.folderName": "Folder name",
 
   "app.server.unreachable": "Could not reach {{server}}",
   "app.server.retrying": "Retrying automatically...",
@@ -659,6 +662,7 @@ export const dict = {
   "session.tab.session": "Session",
   "session.tab.review": "Review",
   "session.tab.context": "Context",
+  "session.tab.code": "Code",
   "session.tab.unknown": "Unknown Session",
   "session.panel.reviewAndFiles": "Review and files",
   "session.error.notFound": "This session cannot be found",
@@ -707,6 +711,7 @@ export const dict = {
   "session.git.stageAll": "Stage all",
   "session.git.unstageAll": "Unstage all",
   "session.git.stagedCount": "{staged}/{total} staged",
+  "session.git.stagedFiles": "Staged Files",
 
   "fileEditor.edit": "Edit",
   "fileEditor.revert": "Revert",

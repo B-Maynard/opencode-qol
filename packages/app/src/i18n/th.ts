@@ -434,6 +434,9 @@ export const dict = {
   "dialog.directory.root": "โฟลเดอร์ราก",
   "dialog.directory.parent": "โฟลเดอร์หลัก",
   "dialog.directory.readError": "ไม่สามารถอ่านโฟลเดอร์นี้ได้",
+  "dialog.directory.newFolder": "New folder",
+  "dialog.directory.createFolder": "Create folder",
+  "dialog.directory.folderName": "Folder name",
 
   "dialog.server.title": "เซิร์ฟเวอร์",
   "dialog.server.description": "สลับเซิร์ฟเวอร์ OpenCode ที่แอปนี้เชื่อมต่อด้วย",
@@ -730,6 +733,7 @@ export const dict = {
   "session.tab.session": "เซสชัน",
   "session.tab.review": "ตรวจสอบ",
   "session.tab.context": "บริบท",
+  "session.tab.code": "โค้ด",
   "session.tab.unknown": "เซสชันที่ไม่รู้จัก",
   "session.panel.reviewAndFiles": "ตรวจสอบและไฟล์",
   "session.error.notFound": "ไม่พบเซสชันนี้",
@@ -769,6 +773,7 @@ export const dict = {
   "session.git.noBranches": "No branches found",
   "session.git.newBranchOption": "New branch...",
   "session.git.createFrom": "Create from",
+  "session.git.stagedFiles": "ไฟล์ที่จัด staging แล้ว",
 
   "fileEditor.edit": "Edit",
   "fileEditor.revert": "Revert",

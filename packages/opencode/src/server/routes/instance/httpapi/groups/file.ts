@@ -100,6 +100,7 @@ export const FilePaths = {
   content: "/file/content",
   status: "/file/status",
   write: "/file/write",
+  mkdir: "/file/mkdir",
 } as const
 
 export const WriteInput = Schema.Struct({
@@ -110,6 +111,14 @@ export const WriteInput = Schema.Struct({
 export const WriteResult = Schema.Struct({
   written: Schema.Boolean,
 }).annotate({ identifier: "FileWriteResult" })
+
+export const MkdirInput = Schema.Struct({
+  path: Schema.String,
+})
+
+export const MkdirResult = Schema.Struct({
+  created: Schema.Boolean,
+}).annotate({ identifier: "FileMkdirResult" })
 
 export class FileWriteError extends Schema.ErrorClass<FileWriteError>("FileWriteError")(
   {
@@ -196,6 +205,18 @@ export const FileApi = HttpApi.make("file")
             identifier: "file.write",
             summary: "Write file",
             description: "Write text content to a file inside the project directory.",
+          }),
+        ),
+        HttpApiEndpoint.post("mkdir", FilePaths.mkdir, {
+          query: WorkspaceRoutingQuery,
+          payload: MkdirInput,
+          success: described(MkdirResult, "Directory created"),
+          error: FileWriteError,
+        }).annotateMerge(
+          OpenApi.annotations({
+            identifier: "file.mkdir",
+            summary: "Create directory",
+            description: "Create a directory inside the project directory.",
           }),
         ),
       )

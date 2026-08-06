@@ -26,6 +26,7 @@ import {
   displayPickerPath,
   pickerParent,
   pickerRoot,
+  joinPickerPath,
 } from "./directory-picker-domain"
 import "./dialog-select-directory-v2.css"
 import { DividerV2 } from "@opencode-ai/ui/v2/divider-v2"
@@ -57,6 +58,8 @@ export function DialogSelectDirectoryV2(props: DialogSelectDirectoryV2Props) {
   const [activeSuggestion, setActiveSuggestion] = createSignal(-1)
   const [loading, setLoading] = createSignal(false)
   const [error, setError] = createSignal(false)
+  const [creating, setCreating] = createSignal(false)
+  const [newFolder, setNewFolder] = createSignal("")
   const [rootValid, setRootValid] = createSignal(false)
   const listings = new Map<string, Promise<Array<{ name: string; type: "file" | "directory" }> | undefined>>()
   const loads = createPriorityTaskQueue<Array<{ name: string; type: "file" | "directory" }> | undefined>(3)
@@ -232,6 +235,20 @@ export function DialogSelectDirectoryV2(props: DialogSelectDirectoryV2Props) {
     dialog.close()
   }
 
+  async function createFolder() {
+    const name = cleanPickerInput(newFolder()).replace(/[/\\]/g, "")
+    const base = root() || start() || home()
+    if (!name || !base) return
+    const target = joinPickerPath(base, name)
+    try {
+      await sdk.client.file.mkdir({ directory: base, path: target })
+      props.onSelect(props.multiple ? [target] : target)
+      dialog.close()
+    } catch {
+      setError(true)
+    }
+  }
+
   onMount(() => {
     const closeSuggestions = (event: PointerEvent) => {
       if (pathArea?.contains(event.target as Node)) return
@@ -322,6 +339,35 @@ export function DialogSelectDirectoryV2(props: DialogSelectDirectoryV2Props) {
             <ButtonV2 size="small" variant="ghost" onClick={() => void navigate(pickerParent(root()))}>
               {language.t("dialog.directory.parent")}
             </ButtonV2>
+            <Show
+              when={creating()}
+              fallback={
+                <ButtonV2 size="small" variant="ghost" onClick={() => setCreating(true)}>
+                  {language.t("dialog.directory.newFolder")}
+                </ButtonV2>
+              }
+            >
+              <div class="directory-picker-v2-new-folder">
+                <span class="text-xs text-v2-text-text-muted whitespace-nowrap">
+                  {displayPickerPath(root() || start() || home(), "", home())}/
+                </span>
+                <TextInputV2
+                  value={newFolder()}
+                  autofocus
+                  autocomplete="off"
+                  spellcheck={false}
+                  placeholder={language.t("dialog.directory.folderName")}
+                  onInput={(event) => setNewFolder(cleanPickerInput(event.currentTarget.value))}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") void createFolder()
+                    if (event.key === "Escape") setCreating(false)
+                  }}
+                />
+                <ButtonV2 size="small" variant="contrast" onClick={() => void createFolder()}>
+                  {language.t("dialog.directory.createFolder")}
+                </ButtonV2>
+              </div>
+            </Show>
           </div>
           <Show when={suggestionsOpen() && currentSuggestions().length > 0}>
             <div id="directory-picker-v2-suggestions" role="listbox" class="directory-picker-v2-suggestions">

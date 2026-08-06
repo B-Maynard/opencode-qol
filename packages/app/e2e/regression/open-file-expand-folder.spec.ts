@@ -113,7 +113,7 @@ test("expands a folder whose path has a trailing Windows separator", async ({ pa
 
   const panel = page.locator("#review-panel")
   await panel.getByRole("button", { name: "Open file" }).click()
-  await expect(panel.getByRole("tab", { name: "Open file" })).toHaveAttribute("data-selected", "")
+  await expect(panel.getByRole("tab", { name: "Code" })).toHaveAttribute("data-selected", "")
 
   const sidebar = panel.locator('[data-component="session-review-v2-sidebar-root"]')
   await expect(sidebar).toBeVisible()

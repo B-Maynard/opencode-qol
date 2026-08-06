@@ -20,6 +20,7 @@ type TabsInput = {
   review?: Accessor<boolean>
   hasReview?: Accessor<boolean>
   fileBrowser?: Accessor<boolean>
+  programmingMode?: Accessor<boolean>
 }
 
 export const getSessionKey = (dir: string | undefined, id: string | undefined) => `${dir ?? ""}${id ? `/${id}` : ""}`
@@ -41,7 +42,8 @@ export const createSessionTabs = (input: TabsInput) => {
   const panelTabs = createMemo(
     () => {
       const seen = new Set<string>()
-      return input
+      if (input.programmingMode?.() && fileBrowser()) seen.add(SESSION_OPEN_FILE_TAB)
+      const fromStore = input
         .tabs()
         .all()
         .flatMap((tab) => {
@@ -52,6 +54,9 @@ export const createSessionTabs = (input: TabsInput) => {
           seen.add(value)
           return [value]
         })
+      return seen.has(SESSION_OPEN_FILE_TAB) && !fromStore.includes(SESSION_OPEN_FILE_TAB)
+        ? [SESSION_OPEN_FILE_TAB, ...fromStore]
+        : fromStore
     },
     emptyTabs,
     { equals: same },
@@ -80,7 +85,6 @@ export const createSessionTabs = (input: TabsInput) => {
   const closableTab = createMemo(() => {
     const active = activeTab()
     if (active === "context") return active
-    if (active === SESSION_OPEN_FILE_TAB && openFileOpen()) return active
     if (!openedTabs().includes(active)) return
     return active
   })

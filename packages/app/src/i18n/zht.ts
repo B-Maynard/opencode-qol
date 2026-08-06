@@ -434,6 +434,9 @@ export const dict = {
   "dialog.directory.root": "根目錄",
   "dialog.directory.parent": "上層目錄",
   "dialog.directory.readError": "無法讀取此資料夾",
+  "dialog.directory.newFolder": "New folder",
+  "dialog.directory.createFolder": "Create folder",
+  "dialog.directory.folderName": "Folder name",
 
   "dialog.server.title": "伺服器",
   "dialog.server.description": "切換此應用程式連線的 OpenCode 伺服器。",
@@ -726,6 +729,7 @@ export const dict = {
   "session.tab.session": "工作階段",
   "session.tab.review": "檢閱",
   "session.tab.context": "上下文",
+  "session.tab.code": "程式碼",
   "session.tab.unknown": "未知的工作階段",
   "session.panel.reviewAndFiles": "檢閱與檔案",
   "session.error.notFound": "找不到此工作階段",
@@ -764,6 +768,7 @@ export const dict = {
   "session.git.noBranches": "No branches found",
   "session.git.newBranchOption": "New branch...",
   "session.git.createFrom": "Create from",
+  "session.git.stagedFiles": "已暫存檔案",
 
   "fileEditor.edit": "Edit",
   "fileEditor.revert": "Revert",
