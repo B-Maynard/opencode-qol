@@ -2316,6 +2316,14 @@ export type FileMkdirResult = {
   created: boolean
 }
 
+export type FileRenameResult = {
+  renamed: boolean
+}
+
+export type FileRemoveResult = {
+  removed: boolean
+}
+
 export type Path = {
   home: string
   state: string
@@ -8205,6 +8213,67 @@ export type FileMkdirResponses = {
 }
 
 export type FileMkdirResponse = FileMkdirResponses[keyof FileMkdirResponses]
+
+export type FileRenameData = {
+  body?: {
+    path: string
+    newName: string
+  }
+  path?: never
+  query?: {
+    directory?: string
+    workspace?: string
+  }
+  url: "/file/rename"
+}
+
+export type FileRenameErrors = {
+  /**
+   * FileWriteError | InvalidRequestError
+   */
+  400: FileWriteError | InvalidRequestError
+}
+
+export type FileRenameError = FileRenameErrors[keyof FileRenameErrors]
+
+export type FileRenameResponses = {
+  /**
+   * File renamed
+   */
+  200: FileRenameResult
+}
+
+export type FileRenameResponse = FileRenameResponses[keyof FileRenameResponses]
+
+export type FileRemoveData = {
+  body?: {
+    path: string
+  }
+  path?: never
+  query?: {
+    directory?: string
+    workspace?: string
+  }
+  url: "/file/remove"
+}
+
+export type FileRemoveErrors = {
+  /**
+   * FileWriteError | InvalidRequestError
+   */
+  400: FileWriteError | InvalidRequestError
+}
+
+export type FileRemoveError = FileRemoveErrors[keyof FileRemoveErrors]
+
+export type FileRemoveResponses = {
+  /**
+   * File removed
+   */
+  200: FileRemoveResult
+}
+
+export type FileRemoveResponse = FileRemoveResponses[keyof FileRemoveResponses]
 
 export type InstanceDisposeData = {
   body?: never

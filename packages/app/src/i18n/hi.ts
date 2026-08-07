@@ -414,6 +414,16 @@ export const dict = {
   "dialog.directory.newFolder": "New folder",
   "dialog.directory.createFolder": "Create folder",
   "dialog.directory.folderName": "Folder name",
+
+  "common.copy": "Copy",
+  "common.copied": "Copied to clipboard",
+  "fileTree.delete.title": "Delete {{name}}?",
+  "fileTree.delete.description": 'Delete "{{name}}"? This cannot be undone.',
+  "fileTree.delete.folderDescription": 'Delete folder "{{name}}" and all its contents? This cannot be undone.',
+  "fileTree.rename.placeholder": "Name",
+  "fileTree.delete.failed": "Failed to delete",
+  "fileTree.rename.failed": "Failed to rename",
+
   "app.server.unreachable": "{{server}} तक नहीं पहुँचा जा सका",
   "app.server.retrying": "स्वचालित रूप से पुनः प्रयास किया जा रहा है...",
   "app.server.otherServers": "अन्य सर्वर",

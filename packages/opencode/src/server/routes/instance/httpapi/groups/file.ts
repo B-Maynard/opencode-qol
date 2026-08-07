@@ -101,6 +101,8 @@ export const FilePaths = {
   status: "/file/status",
   write: "/file/write",
   mkdir: "/file/mkdir",
+  rename: "/file/rename",
+  remove: "/file/remove",
 } as const
 
 export const WriteInput = Schema.Struct({
@@ -119,6 +121,23 @@ export const MkdirInput = Schema.Struct({
 export const MkdirResult = Schema.Struct({
   created: Schema.Boolean,
 }).annotate({ identifier: "FileMkdirResult" })
+
+export const RenameInput = Schema.Struct({
+  path: Schema.String,
+  newName: Schema.String,
+})
+
+export const RenameResult = Schema.Struct({
+  renamed: Schema.Boolean,
+}).annotate({ identifier: "FileRenameResult" })
+
+export const RemoveInput = Schema.Struct({
+  path: Schema.String,
+})
+
+export const RemoveResult = Schema.Struct({
+  removed: Schema.Boolean,
+}).annotate({ identifier: "FileRemoveResult" })
 
 export class FileWriteError extends Schema.ErrorClass<FileWriteError>("FileWriteError")(
   {
@@ -217,6 +236,30 @@ export const FileApi = HttpApi.make("file")
             identifier: "file.mkdir",
             summary: "Create directory",
             description: "Create a directory inside the project directory.",
+          }),
+        ),
+        HttpApiEndpoint.post("rename", FilePaths.rename, {
+          query: WorkspaceRoutingQuery,
+          payload: RenameInput,
+          success: described(RenameResult, "File renamed"),
+          error: FileWriteError,
+        }).annotateMerge(
+          OpenApi.annotations({
+            identifier: "file.rename",
+            summary: "Rename file or directory",
+            description: "Rename a file or directory inside the project directory.",
+          }),
+        ),
+        HttpApiEndpoint.post("remove", FilePaths.remove, {
+          query: WorkspaceRoutingQuery,
+          payload: RemoveInput,
+          success: described(RemoveResult, "File removed"),
+          error: FileWriteError,
+        }).annotateMerge(
+          OpenApi.annotations({
+            identifier: "file.remove",
+            summary: "Remove file or directory",
+            description: "Remove a file or directory (and its contents) inside the project directory.",
           }),
         ),
       )

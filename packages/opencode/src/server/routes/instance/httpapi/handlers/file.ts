@@ -182,6 +182,46 @@ export const fileHandlers = HttpApiBuilder.group(InstanceHttpApi, "file", (handl
       return { created: !exists }
     })
 
+    const rename = Effect.fn("FileHttpApi.rename")(function* (ctx: { payload: { path: string; newName: string } }) {
+      const directory = (yield* InstanceState.context).directory
+      const source = path.resolve(directory, ctx.payload.path)
+      if (!FSUtil.contains(directory, source)) {
+        return yield* new FileWriteError({
+          name: "FileWriteError",
+          data: { reason: "path-out-of-scope", message: "Path escapes the project directory" },
+        })
+      }
+      const target = path.resolve(path.dirname(source), ctx.payload.newName)
+      if (!FSUtil.contains(directory, target) || target === source) {
+        return yield* new FileWriteError({
+          name: "FileWriteError",
+          data: { reason: "path-out-of-scope", message: "Invalid rename target" },
+        })
+      }
+      const exists = yield* FSUtil.Service.use((fs) => fs.existsSafe(target))
+      if (exists) {
+        return yield* new FileWriteError({
+          name: "FileWriteError",
+          data: { reason: "not-a-file", message: "A file or directory with that name already exists" },
+        })
+      }
+      yield* FSUtil.Service.use((fs) => fs.rename(source, target)).pipe(Effect.orDie)
+      return { renamed: true }
+    })
+
+    const remove = Effect.fn("FileHttpApi.remove")(function* (ctx: { payload: { path: string } }) {
+      const directory = (yield* InstanceState.context).directory
+      const target = path.resolve(directory, ctx.payload.path)
+      if (!FSUtil.contains(directory, target)) {
+        return yield* new FileWriteError({
+          name: "FileWriteError",
+          data: { reason: "path-out-of-scope", message: "Path escapes the project directory" },
+        })
+      }
+      yield* FSUtil.Service.use((fs) => fs.remove(target, { recursive: true })).pipe(Effect.orDie)
+      return { removed: true }
+    })
+
     return handlers
       .handle("findText", findText)
       .handle("findFile", findFile)
@@ -191,5 +231,7 @@ export const fileHandlers = HttpApiBuilder.group(InstanceHttpApi, "file", (handl
       .handle("status", status)
       .handle("write", write)
       .handle("mkdir", mkdir)
+      .handle("rename", rename)
+      .handle("remove", remove)
   }),
 ).pipe(Layer.provide(locationServiceMapLayer))

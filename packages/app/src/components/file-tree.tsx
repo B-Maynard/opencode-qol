@@ -18,6 +18,8 @@ import {
 } from "solid-js"
 import { Dynamic } from "solid-js/web"
 import type { FileNode } from "@opencode-ai/sdk/v2"
+import { MenuV2 } from "@opencode-ai/ui/v2/menu-v2"
+import { FileTreeMenuItems } from "./file-tree-menu"
 
 const MAX_DEPTH = 128
 
@@ -405,19 +407,28 @@ export default function FileTree(props: {
                   onOpenChange={(open) => (open ? file.tree.expand(node.path) : file.tree.collapse(node.path))}
                 >
                   <Collapsible.Trigger>
-                    <FileTreeNode
-                      node={node}
-                      level={level}
-                      active={props.active}
-                      nodeClass={props.nodeClass}
-                      draggable={draggable()}
-                      kinds={kinds()}
-                      marks={marks()}
-                    >
-                      <div class="size-4 flex items-center justify-center text-icon-weak">
-                        <Icon name={expanded() ? "chevron-down" : "chevron-right"} size="small" />
-                      </div>
-                    </FileTreeNode>
+                    <MenuV2.Context>
+                      <MenuV2.Context.Trigger as="div" class="contents">
+                        <FileTreeNode
+                          node={node}
+                          level={level}
+                          active={props.active}
+                          nodeClass={props.nodeClass}
+                          draggable={draggable()}
+                          kinds={kinds()}
+                          marks={marks()}
+                        >
+                          <div class="size-4 flex items-center justify-center text-icon-weak">
+                            <Icon name={expanded() ? "chevron-down" : "chevron-right"} size="small" />
+                          </div>
+                        </FileTreeNode>
+                      </MenuV2.Context.Trigger>
+                      <MenuV2.Context.Portal>
+                        <MenuV2.Context.Content>
+                          <FileTreeMenuItems node={node} />
+                        </MenuV2.Context.Content>
+                      </MenuV2.Context.Portal>
+                    </MenuV2.Context>
                   </Collapsible.Trigger>
                   <Collapsible.Content class="relative pt-0.5">
                     <div
@@ -453,52 +464,61 @@ export default function FileTree(props: {
                 </Collapsible>
               </Match>
               <Match when={node.type === "file"}>
-                <FileTreeNode
-                  node={node}
-                  level={level}
-                  active={props.active}
-                  nodeClass={props.nodeClass}
-                  draggable={draggable()}
-                  kinds={kinds()}
-                  marks={marks()}
-                  as="button"
-                  type="button"
-                  onClick={() => props.onFileClick?.(node)}
-                  onDblClick={() => props.onFileDoubleClick?.(node)}
-                >
-                  <div class="w-4 shrink-0" />
-                  <Switch>
-                    <Match when={node.ignored}>
-                      <FileIcon
-                        node={node}
-                        class="size-4 filetree-icon filetree-icon--mono"
-                        style="color: var(--icon-weak-base)"
-                        mono
-                      />
-                    </Match>
-                    <Match when={active()}>
-                      <FileIcon
-                        node={node}
-                        class="size-4 filetree-icon filetree-icon--mono"
-                        style={kindTextColor(kind()!)}
-                        mono
-                      />
-                    </Match>
-                    <Match when={!node.ignored}>
-                      <span class="filetree-iconpair size-4">
-                        <FileIcon
-                          node={node}
-                          class="size-4 filetree-icon filetree-icon--color opacity-0 group-hover/filetree:opacity-100"
-                        />
-                        <FileIcon
-                          node={node}
-                          class="size-4 filetree-icon filetree-icon--mono group-hover/filetree:opacity-0"
-                          mono
-                        />
-                      </span>
-                    </Match>
-                  </Switch>
-                </FileTreeNode>
+                <MenuV2.Context>
+                  <MenuV2.Context.Trigger as="div" class="contents">
+                    <FileTreeNode
+                      node={node}
+                      level={level}
+                      active={props.active}
+                      nodeClass={props.nodeClass}
+                      draggable={draggable()}
+                      kinds={kinds()}
+                      marks={marks()}
+                      as="button"
+                      type="button"
+                      onClick={() => props.onFileClick?.(node)}
+                      onDblClick={() => props.onFileDoubleClick?.(node)}
+                    >
+                      <div class="w-4 shrink-0" />
+                      <Switch>
+                        <Match when={node.ignored}>
+                          <FileIcon
+                            node={node}
+                            class="size-4 filetree-icon filetree-icon--mono"
+                            style="color: var(--icon-weak-base)"
+                            mono
+                          />
+                        </Match>
+                        <Match when={active()}>
+                          <FileIcon
+                            node={node}
+                            class="size-4 filetree-icon filetree-icon--mono"
+                            style={kindTextColor(kind()!)}
+                            mono
+                          />
+                        </Match>
+                        <Match when={!node.ignored}>
+                          <span class="filetree-iconpair size-4">
+                            <FileIcon
+                              node={node}
+                              class="size-4 filetree-icon filetree-icon--color opacity-0 group-hover/filetree:opacity-100"
+                            />
+                            <FileIcon
+                              node={node}
+                              class="size-4 filetree-icon filetree-icon--mono group-hover/filetree:opacity-0"
+                              mono
+                            />
+                          </span>
+                        </Match>
+                      </Switch>
+                    </FileTreeNode>
+                  </MenuV2.Context.Trigger>
+                  <MenuV2.Context.Portal>
+                    <MenuV2.Context.Content>
+                      <FileTreeMenuItems node={node} />
+                    </MenuV2.Context.Content>
+                  </MenuV2.Context.Portal>
+                </MenuV2.Context>
               </Match>
             </Switch>
           )

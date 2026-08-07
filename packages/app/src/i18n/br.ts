@@ -414,6 +414,16 @@ export const dict = {
   "dialog.directory.newFolder": "New folder",
   "dialog.directory.createFolder": "Create folder",
   "dialog.directory.folderName": "Folder name",
+
+  "common.copy": "Copy",
+  "common.copied": "Copied to clipboard",
+  "fileTree.delete.title": "Delete {{name}}?",
+  "fileTree.delete.description": 'Delete "{{name}}"? This cannot be undone.',
+  "fileTree.delete.folderDescription": 'Delete folder "{{name}}" and all its contents? This cannot be undone.',
+  "fileTree.rename.placeholder": "Name",
+  "fileTree.delete.failed": "Failed to delete",
+  "fileTree.rename.failed": "Failed to rename",
+
   "dialog.server.title": "Servidores",
   "dialog.server.description": "Trocar para qual servidor OpenCode este aplicativo se conecta.",
   "dialog.server.search.placeholder": "Buscar servidores",

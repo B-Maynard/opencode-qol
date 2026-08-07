@@ -24,6 +24,8 @@ import {
   type FileTreeV2Node,
 } from "@/components/file-tree-v2-model"
 import { virtualScrollElement } from "@/components/virtual-scroll-element"
+import { MenuV2 } from "@opencode-ai/ui/v2/menu-v2"
+import { FileTreeMenuItems } from "./file-tree-menu"
 
 export type { Kind } from "@/components/file-tree"
 
@@ -240,54 +242,72 @@ export default function FileTreeV2(props: {
                     <Show
                       when={row().node.type === "directory"}
                       fallback={
-                        <FileTreeNodeV2
-                          node={row().node}
-                          level={row().level}
-                          active={active()}
-                          draggable={draggable()}
-                          kinds={props.kinds}
-                          as="button"
-                          type="button"
-                          class="relative"
-                          onFocus={() => setFocused(row().node.path)}
-                          onBlur={() => setFocused(undefined)}
-                          onClick={() => selectFile(row().node, props.onFileClick)}
-                          onDblClick={() => selectFile(row().node, props.onFileDoubleClick)}
-                        >
-                          <GuideLines level={row().level} />
-                          <Show when={row().level > 0}>
-                            <div class="w-4 shrink-0" />
-                          </Show>
-                          <span class="filetree-iconpair size-4">
-                            <FileIcon node={row().node} class="size-4 filetree-icon filetree-icon--color" />
-                            <FileIcon node={row().node} class="size-4 filetree-icon filetree-icon--mono" mono />
-                          </span>
-                        </FileTreeNodeV2>
+                        <MenuV2.Context>
+                          <MenuV2.Context.Trigger as="div" class="contents">
+                            <FileTreeNodeV2
+                              node={row().node}
+                              level={row().level}
+                              active={active()}
+                              draggable={draggable()}
+                              kinds={props.kinds}
+                              as="button"
+                              type="button"
+                              class="relative"
+                              onFocus={() => setFocused(row().node.path)}
+                              onBlur={() => setFocused(undefined)}
+                              onClick={() => selectFile(row().node, props.onFileClick)}
+                              onDblClick={() => selectFile(row().node, props.onFileDoubleClick)}
+                            >
+                              <GuideLines level={row().level} />
+                              <Show when={row().level > 0}>
+                                <div class="w-4 shrink-0" />
+                              </Show>
+                              <span class="filetree-iconpair size-4">
+                                <FileIcon node={row().node} class="size-4 filetree-icon filetree-icon--color" />
+                                <FileIcon node={row().node} class="size-4 filetree-icon filetree-icon--mono" mono />
+                              </span>
+                            </FileTreeNodeV2>
+                          </MenuV2.Context.Trigger>
+                          <MenuV2.Context.Portal>
+                            <MenuV2.Context.Content>
+                              <FileTreeMenuItems node={row().node} />
+                            </MenuV2.Context.Content>
+                          </MenuV2.Context.Portal>
+                        </MenuV2.Context>
                       }
                     >
-                      <FileTreeNodeV2
-                        node={row().node}
-                        level={row().level}
-                        active={active()}
-                        draggable={draggable()}
-                        kinds={props.kinds}
-                        as="button"
-                        type="button"
-                        class="relative"
-                        onFocus={() => setFocused(row().node.path)}
-                        onBlur={() => setFocused(undefined)}
-                        aria-expanded={expanded(row().node.path)}
-                        onClick={() => toggleDirectory(row().node.path, row().node.originalPath)}
-                      >
-                        <GuideLines level={row().level} />
-                        <div
-                          data-slot="file-tree-v2-chevron"
-                          data-expanded={expanded(row().node.path) ? "" : undefined}
-                          class="size-4 flex items-center justify-center"
-                        >
-                          <Icon name="chevron-down" />
-                        </div>
-                      </FileTreeNodeV2>
+                      <MenuV2.Context>
+                        <MenuV2.Context.Trigger as="div" class="contents">
+                          <FileTreeNodeV2
+                            node={row().node}
+                            level={row().level}
+                            active={active()}
+                            draggable={draggable()}
+                            kinds={props.kinds}
+                            as="button"
+                            type="button"
+                            class="relative"
+                            onFocus={() => setFocused(row().node.path)}
+                            onBlur={() => setFocused(undefined)}
+                            aria-expanded={expanded(row().node.path)}
+                            onClick={() => toggleDirectory(row().node.path, row().node.originalPath)}
+                          >
+                            <GuideLines level={row().level} />
+                            <div
+                              data-slot="file-tree-v2-chevron"
+                              data-expanded={expanded(row().node.path) ? "" : undefined}
+                              class="size-4 flex items-center justify-center"
+                            >
+                              <Icon name="chevron-down" />
+                            </div>
+                          </FileTreeNodeV2>
+                        </MenuV2.Context.Trigger>
+                        <MenuV2.Context.Portal>
+                          <MenuV2.Context.Content>
+                            <FileTreeMenuItems node={row().node} />
+                          </MenuV2.Context.Content>
+                        </MenuV2.Context.Portal>
+                      </MenuV2.Context>
                     </Show>
                   )}
                 </Show>

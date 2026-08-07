@@ -68,6 +68,10 @@ import type {
   FilePartSource,
   FileReadErrors,
   FileReadResponses,
+  FileRemoveErrors,
+  FileRemoveResponses,
+  FileRenameErrors,
+  FileRenameResponses,
   FileStatusErrors,
   FileStatusResponses,
   FileWriteErrors,
@@ -2007,6 +2011,82 @@ export class File extends HeyApiClient {
     )
     return (options?.client ?? this.client).post<FileMkdirResponses, FileMkdirErrors, ThrowOnError>({
       url: "/file/mkdir",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Rename file or directory
+   *
+   * Rename a file or directory inside the project directory.
+   */
+  public rename<ThrowOnError extends boolean = false>(
+    parameters?: {
+      directory?: string
+      workspace?: string
+      path?: string
+      newName?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "query", key: "directory" },
+            { in: "query", key: "workspace" },
+            { in: "body", key: "path" },
+            { in: "body", key: "newName" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<FileRenameResponses, FileRenameErrors, ThrowOnError>({
+      url: "/file/rename",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Remove file or directory
+   *
+   * Remove a file or directory (and its contents) inside the project directory.
+   */
+  public remove<ThrowOnError extends boolean = false>(
+    parameters?: {
+      directory?: string
+      workspace?: string
+      path?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "query", key: "directory" },
+            { in: "query", key: "workspace" },
+            { in: "body", key: "path" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<FileRemoveResponses, FileRemoveErrors, ThrowOnError>({
+      url: "/file/remove",
       ...options,
       ...params,
       headers: {
