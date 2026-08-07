@@ -68,6 +68,38 @@ describe("openSessionTab", () => {
       state(["file://a.ts", "file://b.ts"], "file://b.ts"),
     )
   })
+
+  test("replaces a permanent file:// sibling with edit:// in place", () => {
+    expect(openSessionTab(state(["file://a.ts"], "file://a.ts"), "edit://a.ts")).toEqual(
+      state(["edit://a.ts"], "edit://a.ts"),
+    )
+  })
+
+  test("replaces edit:// sibling with file:// in place (the toggle-off bug)", () => {
+    expect(openSessionTab(state(["edit://a.ts"], "edit://a.ts"), "file://a.ts")).toEqual(
+      state(["file://a.ts"], "file://a.ts"),
+    )
+  })
+
+  test("replaces the edit:// sibling in place within multiple tabs", () => {
+    expect(openSessionTab(state(["file://a.ts", "file://b.ts"], "file://a.ts"), "edit://b.ts")).toEqual(
+      state(["file://a.ts", "edit://b.ts"], "edit://b.ts"),
+    )
+  })
+
+  test("replaces the edit:// sibling when it is the preview", () => {
+    expect(openSessionTab(state(["edit://a.ts"], "edit://a.ts", "edit://a.ts"), "file://a.ts")).toEqual(
+      state(["file://a.ts"], "file://a.ts"),
+    )
+  })
+
+  test("toggling edit on and off keeps exactly one tab", () => {
+    const toggled = openSessionTab(
+      openSessionTab(state(["file://a.ts"], "file://a.ts"), "edit://a.ts"),
+      "file://a.ts",
+    )
+    expect(toggled).toEqual(state(["file://a.ts"], "file://a.ts"))
+  })
 })
 
 describe("closeSessionTab", () => {

@@ -40,6 +40,13 @@ export function previewSessionTab(current: SessionTabState, tab: string): Sessio
   }
 }
 
+// ponytail: file:// and edit:// share a path suffix, so string suffix match replaces sibling
+const siblingIndexOf = (all: string[], tab: string): number => {
+  if (!tab.startsWith("file://") && !tab.startsWith("edit://")) return -1
+  const op = tab.startsWith("file://") ? "edit://" : "file://"
+  return all.indexOf(op + tab.slice(tab.indexOf("://") + 3))
+}
+
 export function openSessionTab(current: SessionTabState, tab: string): SessionTabState {
   const preview = sessionTabPreview(current)
   if (tab === "review") {
@@ -64,6 +71,15 @@ export function openSessionTab(current: SessionTabState, tab: string): SessionTa
     }
     return {
       tabs: { all: current.tabs.all.filter((item) => item !== preview), active: tab },
+    }
+  }
+
+  const siblingIndex = existingIndex === -1 ? siblingIndexOf(current.tabs.all, tab) : -1
+  if (siblingIndex !== -1) {
+    const sibling = current.tabs.all[siblingIndex]
+    return {
+      tabs: { all: current.tabs.all.map((item, index) => (index === siblingIndex ? tab : item)), active: tab },
+      preview: preview === sibling ? undefined : preview,
     }
   }
 

@@ -2268,7 +2268,7 @@ export default function Page() {
                       <Button
                         size="small"
                         variant="secondary"
-                        onClick={() => openMobileFileTab(file.pathFromTab(tab)!, true)}
+                        onClick={() => openMobileFileTab(file.pathFromTab(tab)!, !tab.startsWith("edit://"))}
                       >
                         {language.t("fileEditor.edit")}
                       </Button>

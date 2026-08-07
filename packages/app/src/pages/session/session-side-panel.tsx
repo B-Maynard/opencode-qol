@@ -654,7 +654,9 @@ export function SessionSidePanel(props: {
                               state={props.fileBrowserState!}
                               onSelect={(path) => previewTab(file.tab(path))}
                               onSelectPermanent={(path) => openTab(file.tab(path))}
-                              onEdit={(path) => openTab(file.editTab(path))}
+                              onEdit={(path) =>
+                                openTab(tabs().active() === file.editTab(path) ? file.tab(path) : file.editTab(path))
+                              }
                               onSelectFile={props.focusReviewDiff}
                               diffs={diffs}
                               filterRef={(element) => (fileFilter = element)}

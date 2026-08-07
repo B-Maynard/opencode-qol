@@ -8,6 +8,7 @@
   </a>
 </p>
 <p align="center">The open source AI coding agent.</p>
+<p align="center"><em>A quality-of-life fork of <a href="https://github.com/anomalyco/opencode">OpenCode</a> with additional features and improvements.</em></p>
 <p align="center">
   <a href="https://opencode.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
   <a href="https://www.npmjs.com/package/opencode-ai"><img alt="npm" src="https://img.shields.io/npm/v/opencode-ai?style=flat-square" /></a>
@@ -118,11 +119,27 @@ For more info on how to configure OpenCode, [**head over to our docs**](https://
 
 ### Contributing
 
-If you're interested in contributing to OpenCode, please read our [contributing docs](./CONTRIBUTING.md) before submitting a pull request.
+Contributions to upstream OpenCode go to [anomalyco/opencode](https://github.com/anomalyco/opencode). Please read their [contributing docs](https://github.com/anomalyco/opencode/blob/dev/CONTRIBUTING.md) before submitting a pull request.
 
-### Building on OpenCode
+### About This Fork
 
-If you are working on a project that's related to OpenCode and is using "opencode" as part of its name, for example "opencode-dashboard" or "opencode-mobile", please add a note to your README to clarify that it is not built by the OpenCode team and is not affiliated with us in any way.
+This is a community fork of [OpenCode](https://github.com/anomalyco/opencode) maintained by Bailey Maynard. It is **not** affiliated with or endorsed by the OpenCode team. All upstream features and documentation apply — see [opencode.ai/docs](https://opencode.ai/docs) for general usage.
+
+If you are building a project that uses "opencode" as part of its name, please clarify in your README that it is not built by the OpenCode team.
+
+### QOL Features (fork additions)
+
+This fork adds several quality-of-life improvements on top of standard OpenCode.
+
+**Git Panel** — A full VCS sidebar with branch selector, staged/unstaged file lists, stage-all/unstage-all, commit, and push. Includes an "AI Generate" button for commit messages (uses the built-in `vcs.commitMessage` endpoint with your staged diff) and a push spinner for long-running pushes.
+
+**In-App File Editor** — A CodeMirror editor embedded in file tabs. Open any file with `edit://` protocol, edit with syntax highlighting, save with `Ctrl+S` or the save button, and revert unsaved changes.
+
+**Directory Picker Improvements** — Create new folders inline in the project/directory selection dialog, with error feedback if creation fails. Touch scrolling support for mobile/tablet use.
+
+**Mobile "All" Changes Tab** — The mobile changes panel gets a third "All" mode showing the full file tree with add/delete markers, so you can browse the entire project structure on mobile without switching context.
+
+**Layout Session Directories** — The sidebar now always shows the project worktree plus directories of all sessions belonging to the current project, not just the active directory.
 
 ---
 
