@@ -35,6 +35,7 @@ export function GitPanel(props: {
   const [message, setMessage] = createSignal("")
   const [busy, setBusy] = createSignal(false)
   const [generating, setGenerating] = createSignal(false)
+  const [pushing, setPushing] = createSignal(false)
 
   const refresh = async () => {
     const result = await sdk().client.vcs.branches()
@@ -110,6 +111,7 @@ export function GitPanel(props: {
 
   const push = async () => {
     setBusy(true)
+    setPushing(true)
     try {
       await sdk().client.vcs.push({})
       showToast({ variant: "success", title: language.t("session.git.pushed") })
@@ -118,6 +120,7 @@ export function GitPanel(props: {
       showError(language.t("session.git.pushFailed"), error)
     } finally {
       setBusy(false)
+      setPushing(false)
     }
   }
 
@@ -258,8 +261,10 @@ export function GitPanel(props: {
           >
             {language.t("session.git.commit")}
           </Button>
-          <Button variant="secondary" size="small" onClick={push} disabled={busy() || generating()}>
-            {language.t("session.git.push")}
+          <Button variant="secondary" size="small" onClick={push} disabled={busy() || generating() || pushing()}>
+            <Show when={pushing()} fallback={language.t("session.git.push")}>
+              <Spinner class="size-3.5" />
+            </Show>
           </Button>
         </div>
       </div>
