@@ -52,15 +52,15 @@ If you are building a project that uses "opencode" as part of its name, please c
 
 This fork adds several quality-of-life improvements on top of standard OpenCode.
 
-**Git Panel** — A full VCS sidebar with branch selector, staged/unstaged file lists, stage-all/unstage-all, commit, and push. Includes an "AI Generate" button for commit messages (uses the built-in `vcs.commitMessage` endpoint with your staged diff) and a push spinner for long-running pushes.
+**Git Panel** — A full VCS sidebar with branch selector (checkout and create-branch dialog), staged/unstaged file lists, stage-all/unstage-all, commit, and push. Stage-all auto-generates a commit message from your staged diff, and long-running pushes show a spinner.
 
 **In-App File Editor** — A CodeMirror editor embedded in file tabs. Open any file with `edit://` protocol, edit with syntax highlighting, save with `Ctrl+S` or the save button, and revert unsaved changes.
 
-**Directory Picker Improvements** — Create new folders inline in the project/directory selection dialog, with error feedback if creation fails. Touch scrolling support for mobile/tablet use.
+**Programming Mode** — A settings toggle that opens the Git panel by default in the sidebar and shows a "Code" tab for quick file access.
 
-**Mobile "All" Changes Tab** — The mobile changes panel gets a third "All" mode showing the full file tree with add/delete markers, so you can browse the entire project structure on mobile without switching context.
+**Home Session Delete** — Delete sessions directly from the home page with a trash button.
 
-**Layout Session Directories** — The sidebar now always shows the project worktree plus directories of all sessions belonging to the current project, not just the active directory.
+**Mobile Changes & Git Tabs** — The changes panel gains an "All" mode showing the full file tree with add/delete markers, plus a Git tab for viewing branches, committing, and pushing from mobile.
 
 ---
 
