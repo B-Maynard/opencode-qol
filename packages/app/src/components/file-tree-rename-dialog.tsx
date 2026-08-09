@@ -8,7 +8,7 @@ import { useSDK } from "@/context/sdk"
 import { showToast } from "@/utils/toast"
 import type { FileNode } from "@opencode-ai/sdk/v2"
 
-export function FileTreeRenameDialog(props: { node: FileNode }) {
+export function FileTreeRenameDialog(props: { node: FileNode; onSuccess?: (newPath: string) => void }) {
   const language = useLanguage()
   const sdk = useSDK()
   const dialog = useDialog()
@@ -27,6 +27,10 @@ export function FileTreeRenameDialog(props: { node: FileNode }) {
         setBusy(false)
         return
       }
+      const separator = props.node.path.lastIndexOf("/")
+      const parent = separator === -1 ? "" : props.node.path.slice(0, separator + 1)
+      const trailing = props.node.path.endsWith("/") ? "/" : ""
+      props.onSuccess?.(`${parent}${trimmed}${trailing}`)
       dialog.close()
     } catch {
       showToast({ variant: "error", title: language.t("fileTree.rename.failed") })
@@ -35,15 +39,16 @@ export function FileTreeRenameDialog(props: { node: FileNode }) {
   }
 
   return (
-    <Dialog>
+    <Dialog fit>
       <DialogHeader>
         <DialogTitle>{language.t("common.rename")}</DialogTitle>
       </DialogHeader>
-      <DialogBody>
+      <DialogBody class="px-4 pb-1">
         <TextInputV2
           value={name()}
           autofocus
           autocomplete="off"
+          class="!w-full"
           onInput={(e) => setName(e.currentTarget.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") void submit()

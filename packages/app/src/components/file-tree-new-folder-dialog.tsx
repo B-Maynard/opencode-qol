@@ -8,7 +8,7 @@ import { useSDK } from "@/context/sdk"
 import { showToast } from "@/utils/toast"
 import type { FileNode } from "@opencode-ai/sdk/v2"
 
-export function FileTreeNewFolderDialog(props: { parent: FileNode }) {
+export function FileTreeNewFolderDialog(props: { parent: FileNode; onSuccess?: (path: string) => void }) {
   const language = useLanguage()
   const sdk = useSDK()
   const dialog = useDialog()
@@ -28,6 +28,7 @@ export function FileTreeNewFolderDialog(props: { parent: FileNode }) {
         setBusy(false)
         return
       }
+      props.onSuccess?.(target)
       dialog.close()
     } catch {
       showToast({ variant: "error", title: language.t("common.requestFailed") })
@@ -36,15 +37,16 @@ export function FileTreeNewFolderDialog(props: { parent: FileNode }) {
   }
 
   return (
-    <Dialog>
+    <Dialog fit>
       <DialogHeader>
         <DialogTitle>{language.t("dialog.directory.newFolder")}</DialogTitle>
       </DialogHeader>
-      <DialogBody>
+      <DialogBody class="px-4 pb-1">
         <TextInputV2
           value={name()}
           autofocus
           autocomplete="off"
+          class="!w-full"
           placeholder={language.t("dialog.directory.folderName")}
           onInput={(e) => setName(e.currentTarget.value)}
           onKeyDown={(e) => {

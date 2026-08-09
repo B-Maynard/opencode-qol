@@ -1,4 +1,4 @@
-import { Dialog, DialogBody, DialogFooter, DialogHeader, DialogTitle } from "@opencode-ai/ui/v2/dialog-v2"
+import { Dialog, DialogFooter, DialogHeader, DialogTitleGroup } from "@opencode-ai/ui/v2/dialog-v2"
 import { ButtonV2 } from "@opencode-ai/ui/v2/button-v2"
 import { useDialog } from "@opencode-ai/ui/context/dialog"
 import { useLanguage } from "@/context/language"
@@ -6,7 +6,7 @@ import { useSDK } from "@/context/sdk"
 import { showToast } from "@/utils/toast"
 import type { FileNode } from "@opencode-ai/sdk/v2"
 
-export function FileTreeDeleteDialog(props: { node: FileNode }) {
+export function FileTreeDeleteDialog(props: { node: FileNode; onSuccess?: () => void }) {
   const language = useLanguage()
   const sdk = useSDK()
   const dialog = useDialog()
@@ -19,6 +19,7 @@ export function FileTreeDeleteDialog(props: { node: FileNode }) {
         showToast({ variant: "error", title: language.t("fileTree.delete.failed"), description: error.data?.message || error.message })
         return
       }
+      props.onSuccess?.()
       dialog.close()
     } catch {
       showToast({ variant: "error", title: language.t("fileTree.delete.failed") })
@@ -28,18 +29,16 @@ export function FileTreeDeleteDialog(props: { node: FileNode }) {
   const isDir = props.node.type === "directory"
 
   return (
-    <Dialog>
-      <DialogHeader>
-        <DialogTitle>{language.t("fileTree.delete.title", { name: props.node.name })}</DialogTitle>
-      </DialogHeader>
-      <DialogBody>
-        <p class="text-sm text-v2-text-text-muted">
-          {language.t(
+    <Dialog fit>
+      <DialogHeader hideClose>
+        <DialogTitleGroup
+          title={language.t("fileTree.delete.title", { name: props.node.name })}
+          description={language.t(
             isDir ? "fileTree.delete.folderDescription" : "fileTree.delete.description",
             { name: props.node.name },
           )}
-        </p>
-      </DialogBody>
+        />
+      </DialogHeader>
       <DialogFooter>
         <ButtonV2 variant="neutral" onClick={() => dialog.close()}>
           {language.t("common.cancel")}

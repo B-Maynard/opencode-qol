@@ -2,12 +2,15 @@ import "@pierre/trees/web-components"
 import { FileTree } from "@pierre/trees"
 import { Dialog, DialogBody, DialogFooter, DialogHeader, DialogTitle } from "@opencode-ai/ui/v2/dialog-v2"
 import { ButtonV2 } from "@opencode-ai/ui/v2/button-v2"
+import { MenuV2 } from "@opencode-ai/ui/v2/menu-v2"
 import { TextInputV2 } from "@opencode-ai/ui/v2/text-input-v2"
 import { useDialog } from "@opencode-ai/ui/context/dialog"
 import { createEffect, createMemo, createResource, createSignal, For, onCleanup, onMount, Show } from "solid-js"
 import { useGlobal } from "@/context/global"
 import { useLanguage } from "@/context/language"
+import { SDKProvider } from "@/context/sdk"
 import { ServerConnection } from "@/context/server"
+import type { FileNode } from "@opencode-ai/sdk/v2"
 import type { Path } from "@opencode-ai/sdk/v2/client"
 import {
   absoluteTreePath,
@@ -24,13 +27,12 @@ import {
   createDirectorySearch,
   currentPickerSuggestions,
   displayPickerPath,
-  pickerParent,
   pickerRoot,
-  joinPickerPath,
 } from "./directory-picker-domain"
 import "./dialog-select-directory-v2.css"
 import { DividerV2 } from "@opencode-ai/ui/v2/divider-v2"
 import { getFilename } from "@opencode-ai/core/util/path"
+import { FileTreeMenuItems, type FileTreeMutation } from "./file-tree-menu"
 
 interface DialogSelectDirectoryV2Props {
   title?: string
@@ -58,16 +60,19 @@ export function DialogSelectDirectoryV2(props: DialogSelectDirectoryV2Props) {
   const [activeSuggestion, setActiveSuggestion] = createSignal(-1)
   const [loading, setLoading] = createSignal(false)
   const [error, setError] = createSignal(false)
-  const [creating, setCreating] = createSignal(false)
-  const [newFolder, setNewFolder] = createSignal("")
-  const [createError, setCreateError] = createSignal("")
   const [rootValid, setRootValid] = createSignal(false)
+  const [menu, setMenu] = createSignal<{
+    item: { kind: string; name: string; path: string }
+    rect: { x: number; y: number }
+    close: () => void
+  } | null>(null)
   const listings = new Map<string, Promise<Array<{ name: string; type: "file" | "directory" }> | undefined>>()
   const loads = createPriorityTaskQueue<Array<{ name: string; type: "file" | "directory" }> | undefined>(3)
   const advanced = new Set<string>()
   let tree: FileTree | undefined
   let container: HTMLDivElement | undefined
   let pathArea: HTMLDivElement | undefined
+  let menuRoot: HTMLDivElement | undefined
   let navigation = 0
 
   const missingBase = createMemo(() => !(sync.data.path.home || sync.data.path.directory))
@@ -236,19 +241,15 @@ export function DialogSelectDirectoryV2(props: DialogSelectDirectoryV2Props) {
     dialog.close()
   }
 
-  async function createFolder() {
-    const name = cleanPickerInput(newFolder()).replace(/[/\\]/g, "")
-    const base = root() || start() || home()
-    if (!name || !base) return
-    const target = joinPickerPath(base, name)
-    const result = await sdk.client.file.mkdir({ directory: base, path: target })
-    if (result.error) {
-      const error = result.error as { data?: { message?: string }; message?: string }
-      setCreateError(error.data?.message || error.message || language.t("common.requestFailed"))
-      return
+  function handleMutation(mutation: FileTreeMutation) {
+    if (mutation.type === "add") {
+      tree?.batch([{ type: "add", path: mutation.path.endsWith("/") ? mutation.path : `${mutation.path}/` }])
+    } else if (mutation.type === "move" && mutation.newPath) {
+      tree?.move(mutation.path, mutation.newPath)
+    } else {
+      tree?.remove(mutation.path, { recursive: true })
     }
-    props.onSelect(props.multiple ? [target] : target)
-    dialog.close()
+    menu()?.close()
   }
 
   onMount(() => {
@@ -281,6 +282,18 @@ export function DialogSelectDirectoryV2(props: DialogSelectDirectoryV2Props) {
           scrollbar-width: thin;
         }
       `,
+      composition: {
+        contextMenu: {
+          enabled: true,
+          triggerMode: "right-click",
+          onOpen(item, context) {
+            setMenu({ item, rect: { x: context.anchorRect.x, y: context.anchorRect.y }, close: context.close })
+          },
+          onClose() {
+            setMenu(null)
+          },
+        },
+      },
       onExpansionChange(change) {
         if (change.expanded) void load(change.path, navigation)
       },
@@ -362,54 +375,6 @@ export function DialogSelectDirectoryV2(props: DialogSelectDirectoryV2Props) {
             }
             onKeyDown={handleInputKey}
           />
-          <div class="directory-picker-v2-actions">
-            <ButtonV2 size="small" variant="ghost" onClick={() => void navigate(home())}>
-              ~
-            </ButtonV2>
-            <ButtonV2 size="small" variant="ghost" onClick={() => void navigate(pickerRoot(root()) || root())}>
-              {language.t("dialog.directory.root")}
-            </ButtonV2>
-            <ButtonV2 size="small" variant="ghost" onClick={() => void navigate(pickerParent(root()))}>
-              {language.t("dialog.directory.parent")}
-            </ButtonV2>
-            <Show
-              when={creating()}
-              fallback={
-                <ButtonV2 size="small" variant="ghost" onClick={() => setCreating(true)}>
-                  {language.t("dialog.directory.newFolder")}
-                </ButtonV2>
-              }
-            >
-              <div class="directory-picker-v2-new-folder">
-                <span class="text-xs text-v2-text-text-muted whitespace-nowrap">
-                  {displayPickerPath(root() || start() || home(), "", home())}/
-                </span>
-                <TextInputV2
-                  value={newFolder()}
-                  autofocus
-                  autocomplete="off"
-                  spellcheck={false}
-                  placeholder={language.t("dialog.directory.folderName")}
-                  onInput={(event) => {
-                    setNewFolder(cleanPickerInput(event.currentTarget.value))
-                    setCreateError("")
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") void createFolder()
-                    if (event.key === "Escape") setCreating(false)
-                  }}
-                />
-                <ButtonV2 size="small" variant="contrast" onClick={() => void createFolder()}>
-                  {language.t("dialog.directory.createFolder")}
-                </ButtonV2>
-                <Show when={createError()}>
-                  <span role="alert" class="text-xs text-v2-state-fg-danger max-w-56 truncate" title={createError()}>
-                    {createError()}
-                  </span>
-                </Show>
-              </div>
-            </Show>
-          </div>
           <Show when={suggestionsOpen() && currentSuggestions().length > 0}>
             <div id="directory-picker-v2-suggestions" role="listbox" class="directory-picker-v2-suggestions">
               <For each={currentSuggestions()}>
@@ -434,6 +399,7 @@ export function DialogSelectDirectoryV2(props: DialogSelectDirectoryV2Props) {
         <div
           class="directory-picker-v2-browser"
           ref={container}
+          onContextMenu={(event) => event.preventDefault()}
           onWheel={(event) => {
             const scroller = tree
               ?.getFileTreeContainer()
@@ -458,6 +424,60 @@ export function DialogSelectDirectoryV2(props: DialogSelectDirectoryV2Props) {
             <div class="directory-picker-v2-state">{language.t("dialog.directory.readError")}</div>
           </Show>
         </div>
+        <Show when={menu()} keyed>
+          {(current) => {
+            const node: FileNode = {
+              name: current.item.name,
+              path: current.item.path,
+              absolute: absoluteTreePath(root() || start() || home(), current.item.path),
+              type: current.item.kind as FileNode["type"],
+              ignored: false,
+            }
+            return (
+              <SDKProvider directory={() => root() || start() || home()}>
+                <div ref={menuRoot} data-file-tree-context-menu-root="true">
+                  <MenuV2.Context
+                    onOpenChange={(open) => {
+                      if (open) return
+                      current.close()
+                      setMenu(null)
+                    }}
+                  >
+                    <MenuV2.Context.Trigger
+                      ref={(element) => {
+                        if (!element) return
+                        queueMicrotask(() => {
+                          element.dispatchEvent(
+                            new MouseEvent("contextmenu", {
+                              clientX: current.rect.x,
+                              clientY: current.rect.y,
+                              bubbles: true,
+                              cancelable: true,
+                              view: window,
+                            }),
+                          )
+                        })
+                      }}
+                      style={{
+                        position: "fixed",
+                        top: `${current.rect.y}px`,
+                        left: `${current.rect.x}px`,
+                        width: "1px",
+                        height: "1px",
+                        "pointer-events": "none",
+                      }}
+                    />
+                    <MenuV2.Context.Portal mount={menuRoot}>
+                      <MenuV2.Context.Content>
+                        <FileTreeMenuItems node={node} onMutation={handleMutation} />
+                      </MenuV2.Context.Content>
+                    </MenuV2.Context.Portal>
+                  </MenuV2.Context>
+                </div>
+              </SDKProvider>
+            )
+          }}
+        </Show>
         <div class="directory-picker-v2-selection">{policy.result(root(), selected(), rootValid())}</div>
       </DialogBody>
       <DialogFooter>
