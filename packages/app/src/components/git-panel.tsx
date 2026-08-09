@@ -202,7 +202,7 @@ export function GitPanel(props: {
                 await props.onStage(allUnstagedPaths())
                 generate()
               }}
-              disabled={busy() || generating()}
+              disabled={busy()}
             >
               <Show when={generating()} fallback={language.t("session.git.stageAll")}>
                 <Spinner class="size-3.5" />
