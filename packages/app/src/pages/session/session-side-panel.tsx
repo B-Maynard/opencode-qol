@@ -83,7 +83,7 @@ export function SessionSidePanel(props: {
   size: Sizing
   stacked?: boolean
   staged: () => string[]
-  onStage: (files: string[]) => void
+  onStage: (files: string[]) => Promise<void>
   onUnstage: (files: string[]) => void
   onCommitSuccess?: () => void
   onPushSuccess?: () => void

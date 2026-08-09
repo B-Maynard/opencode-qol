@@ -40,7 +40,7 @@ export function SessionFileBrowserTab(props: {
   diffs?: () => { file: string }[]
   filterRef?: (element: HTMLInputElement) => void
   staged?: () => string[]
-  onStage?: (files: string[]) => void
+  onStage?: (files: string[]) => Promise<void>
   onUnstage?: (files: string[]) => void
   onCommitSuccess?: () => void
   onPushSuccess?: () => void
@@ -148,7 +148,7 @@ export function SessionFileBrowserTab(props: {
                 files={() => props.diffs?.() ?? []}
                 onSelectFile={props.onSelectFile}
                 staged={() => props.staged?.() ?? []}
-                onStage={(files) => props.onStage?.(files)}
+                onStage={(files) => props.onStage?.(files) ?? Promise.resolve()}
                 onUnstage={(files) => props.onUnstage?.(files)}
                 onCommitSuccess={props.onCommitSuccess}
                 onPushSuccess={props.onPushSuccess}

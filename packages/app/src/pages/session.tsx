@@ -712,7 +712,7 @@ export default function Page() {
     () => sdk().client.vcs.staged({}).then((result) => result.data ?? []),
   )
   const stageFiles = (files: string[]) => {
-    void sdk()
+    return sdk()
       .client.vcs.stage({ files })
       .then(() => {
         startTransition(() => refetchStaged())

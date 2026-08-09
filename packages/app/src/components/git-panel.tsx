@@ -23,7 +23,7 @@ export function GitPanel(props: {
   files: () => { file: string }[]
   onSelectFile?: (path: string) => void
   staged: () => string[]
-  onStage: (files: string[]) => void
+  onStage: (files: string[]) => Promise<void>
   onUnstage: (files: string[]) => void
   onCommitSuccess?: () => void
   onPushSuccess?: () => void
@@ -198,8 +198,8 @@ export function GitPanel(props: {
             <Button
               size="small"
               variant="secondary"
-              onClick={() => {
-                props.onStage(allUnstagedPaths())
+              onClick={async () => {
+                await props.onStage(allUnstagedPaths())
                 generate()
               }}
               disabled={busy() || generating()}
@@ -228,7 +228,10 @@ export function GitPanel(props: {
                     icon="plus-small"
                     title={language.t("session.git.stage")}
                     aria-label={language.t("session.git.stage")}
-                    onClick={() => props.onStage([file.file])}
+                    onClick={async () => {
+                      await props.onStage([file.file])
+                      if (props.staged().length + 1 >= props.files().length) generate()
+                    }}
                   />
                 </li>
               )}
