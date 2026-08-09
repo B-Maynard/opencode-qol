@@ -189,7 +189,7 @@ export function GitPanel(props: {
         </div>
       </Show>
 
-      <Show when={unstagedFiles().length > 0}>
+      <Show when={unstagedFiles().length > 0 || generating()}>
         <div class="flex flex-col gap-1.5">
           <div class="flex items-center justify-between gap-2">
             <span class="text-12-regular text-text-weak">
