@@ -243,7 +243,7 @@ export default function FileTreeV2(props: {
                       when={row().node.type === "directory"}
                       fallback={
                         <MenuV2.Context>
-                          <MenuV2.Context.Trigger as="div" class="contents">
+                          <MenuV2.Context.Trigger as="div" class="relative">
                             <FileTreeNodeV2
                               node={row().node}
                               level={row().level}
@@ -277,7 +277,7 @@ export default function FileTreeV2(props: {
                       }
                     >
                       <MenuV2.Context>
-                        <MenuV2.Context.Trigger as="div" class="contents">
+                        <MenuV2.Context.Trigger as="div" class="relative">
                           <FileTreeNodeV2
                             node={row().node}
                             level={row().level}

@@ -398,17 +398,17 @@ export default function FileTree(props: {
           return (
             <Switch>
               <Match when={node.type === "directory"}>
-                <Collapsible
-                  variant="ghost"
-                  class="w-full"
-                  data-scope="filetree"
-                  forceMount={false}
-                  open={expanded()}
-                  onOpenChange={(open) => (open ? file.tree.expand(node.path) : file.tree.collapse(node.path))}
-                >
-                  <Collapsible.Trigger>
-                    <MenuV2.Context>
-                      <MenuV2.Context.Trigger as="div" class="contents">
+                <MenuV2.Context>
+                  <MenuV2.Context.Trigger as="div" class="relative">
+                    <Collapsible
+                      variant="ghost"
+                      class="w-full"
+                      data-scope="filetree"
+                      forceMount={false}
+                      open={expanded()}
+                      onOpenChange={(open) => (open ? file.tree.expand(node.path) : file.tree.collapse(node.path))}
+                    >
+                      <Collapsible.Trigger>
                         <FileTreeNode
                           node={node}
                           level={level}
@@ -422,50 +422,50 @@ export default function FileTree(props: {
                             <Icon name={expanded() ? "chevron-down" : "chevron-right"} size="small" />
                           </div>
                         </FileTreeNode>
-                      </MenuV2.Context.Trigger>
-                      <MenuV2.Context.Portal>
-                        <MenuV2.Context.Content>
-                          <FileTreeMenuItems node={node} />
-                        </MenuV2.Context.Content>
-                      </MenuV2.Context.Portal>
-                    </MenuV2.Context>
-                  </Collapsible.Trigger>
-                  <Collapsible.Content class="relative pt-0.5">
-                    <div
-                      classList={{
-                        "absolute top-0 bottom-0 w-px pointer-events-none bg-border-weak-base opacity-0 transition-opacity duration-150 ease-out motion-reduce:transition-none": true,
-                        "group-hover/filetree:opacity-100": expanded() && deep() === level,
-                        "group-hover/filetree:opacity-50": !(expanded() && deep() === level),
-                      }}
-                      style={`left: ${Math.max(0, 8 + level * 12 - 4) + 8}px`}
-                    />
-                    <Show
-                      when={level < MAX_DEPTH && !chain.includes(key(node.path))}
-                      fallback={<div class="px-2 py-1 text-12-regular text-text-weak">...</div>}
-                    >
-                      <FileTree
-                        path={node.path}
-                        level={level + 1}
-                        allowed={props.allowed}
-                        modified={props.modified}
-                        kinds={props.kinds}
-                        active={props.active}
-                        draggable={props.draggable}
-                        onFileClick={props.onFileClick}
-                        onFileDoubleClick={props.onFileDoubleClick}
-                        _filter={filter()}
-                        _marks={marks()}
-                        _deeps={deeps()}
-                        _kinds={kinds()}
-                        _chain={chain}
-                      />
-                    </Show>
-                  </Collapsible.Content>
-                </Collapsible>
+                      </Collapsible.Trigger>
+                      <Collapsible.Content class="relative pt-0.5">
+                        <div
+                          classList={{
+                            "absolute top-0 bottom-0 w-px pointer-events-none bg-border-weak-base opacity-0 transition-opacity duration-150 ease-out motion-reduce:transition-none": true,
+                            "group-hover/filetree:opacity-100": expanded() && deep() === level,
+                            "group-hover/filetree:opacity-50": !(expanded() && deep() === level),
+                          }}
+                          style={`left: ${Math.max(0, 8 + level * 12 - 4) + 8}px`}
+                        />
+                        <Show
+                          when={level < MAX_DEPTH && !chain.includes(key(node.path))}
+                          fallback={<div class="px-2 py-1 text-12-regular text-text-weak">...</div>}
+                        >
+                          <FileTree
+                            path={node.path}
+                            level={level + 1}
+                            allowed={props.allowed}
+                            modified={props.modified}
+                            kinds={props.kinds}
+                            active={props.active}
+                            draggable={props.draggable}
+                            onFileClick={props.onFileClick}
+                            onFileDoubleClick={props.onFileDoubleClick}
+                            _filter={filter()}
+                            _marks={marks()}
+                            _deeps={deeps()}
+                            _kinds={kinds()}
+                            _chain={chain}
+                          />
+                        </Show>
+                      </Collapsible.Content>
+                  </Collapsible>
+                </MenuV2.Context.Trigger>
+                <MenuV2.Context.Portal>
+                  <MenuV2.Context.Content>
+                    <FileTreeMenuItems node={node} />
+                  </MenuV2.Context.Content>
+                </MenuV2.Context.Portal>
+              </MenuV2.Context>
               </Match>
               <Match when={node.type === "file"}>
                 <MenuV2.Context>
-                  <MenuV2.Context.Trigger as="div" class="contents">
+                  <MenuV2.Context.Trigger as="div" class="relative">
                     <FileTreeNode
                       node={node}
                       level={level}
