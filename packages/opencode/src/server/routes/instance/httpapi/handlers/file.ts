@@ -138,6 +138,13 @@ export const fileHandlers = HttpApiBuilder.group(InstanceHttpApi, "file", (handl
           data: { reason: "path-out-of-scope", message: "Path escapes the project directory" },
         })
       }
+      const realpath = yield* FSUtil.resolveRealpath(file)
+      if (!FSUtil.contains(directory, realpath)) {
+        return yield* new FileWriteError({
+          name: "FileWriteError",
+          data: { reason: "path-out-of-scope", message: "Path escapes the project directory" },
+        })
+      }
       if (Buffer.byteLength(ctx.payload.content) > 5 * 1024 * 1024) {
         return yield* new FileWriteError({
           name: "FileWriteError",
@@ -158,27 +165,51 @@ export const fileHandlers = HttpApiBuilder.group(InstanceHttpApi, "file", (handl
       }
       // The location-scoped file watcher publishes an update event for the
       // write, which refreshes the file tree in the app automatically.
-      yield* FSUtil.Service.use((fs) => fs.writeFileString(file, ctx.payload.content)).pipe(Effect.orDie)
+      yield* FSUtil.Service.use((fs) => fs.writeFileString(file, ctx.payload.content)).pipe(
+        Effect.catch((cause) =>
+          Effect.fail(
+            new FileWriteError({
+              name: "FileWriteError",
+              data: { reason: "io-error", message: `Failed to write file: ${cause.message}` },
+            }),
+          ),
+        ),
+      )
       return { written: true }
     })
 
-    // ponytail: mkdir is the "create a new project" path — by definition the target
-    // is outside any existing project scope. The auth layer gates the endpoint;
-    // OS permissions gate what we can actually create. No project-scope check.
+    // mkdir creates a new directory inside the project. The lexical
+    // `path.resolve` confines the target lexically; we additionally
+    // realpath-check the longest existing ancestor to catch symlink
+    // escapes via existing parent components.
     const mkdir = Effect.fn("FileHttpApi.mkdir")(function* (ctx: { payload: { path: string } }) {
       const directory = (yield* InstanceState.context).directory
       const target = path.resolve(directory, ctx.payload.path)
+      if (!FSUtil.contains(directory, target)) {
+        return yield* new FileWriteError({
+          name: "FileWriteError",
+          data: { reason: "path-out-of-scope", message: "Path escapes the project directory" },
+        })
+      }
+      const realpath = yield* FSUtil.resolveRealpath(target)
+      if (!FSUtil.contains(directory, realpath)) {
+        return yield* new FileWriteError({
+          name: "FileWriteError",
+          data: { reason: "path-out-of-scope", message: "Path escapes the project directory" },
+        })
+      }
       const exists = yield* FSUtil.Service.use((fs) => fs.existsSafe(target))
       if (!exists) {
         yield* FSUtil.Service.use((fs) => fs.makeDirectory(target, { recursive: true })).pipe(
           Effect.catch((cause) =>
             new FileWriteError({
               name: "FileWriteError",
-              data: { reason: "not-a-file", message: `Failed to create directory: ${cause.message}` },
+              data: { reason: "io-error", message: `Failed to create directory: ${cause.message}` },
             }),
           ),
         )
       }
+      // Idempotent: returns { created: false } if target already exists.
       return { created: !exists }
     })
 
@@ -191,11 +222,25 @@ export const fileHandlers = HttpApiBuilder.group(InstanceHttpApi, "file", (handl
           data: { reason: "path-out-of-scope", message: "Path escapes the project directory" },
         })
       }
+      const sourceRealpath = yield* FSUtil.resolveRealpath(source)
+      if (!FSUtil.contains(directory, sourceRealpath)) {
+        return yield* new FileWriteError({
+          name: "FileWriteError",
+          data: { reason: "path-out-of-scope", message: "Path escapes the project directory" },
+        })
+      }
       const target = path.resolve(path.dirname(source), ctx.payload.newName)
       if (!FSUtil.contains(directory, target) || target === source) {
         return yield* new FileWriteError({
           name: "FileWriteError",
           data: { reason: "path-out-of-scope", message: "Invalid rename target" },
+        })
+      }
+      const targetRealpath = yield* FSUtil.resolveRealpath(target)
+      if (!FSUtil.contains(directory, targetRealpath)) {
+        return yield* new FileWriteError({
+          name: "FileWriteError",
+          data: { reason: "path-out-of-scope", message: "Path escapes the project directory" },
         })
       }
       const exists = yield* FSUtil.Service.use((fs) => fs.existsSafe(target))
@@ -205,7 +250,16 @@ export const fileHandlers = HttpApiBuilder.group(InstanceHttpApi, "file", (handl
           data: { reason: "not-a-file", message: "A file or directory with that name already exists" },
         })
       }
-      yield* FSUtil.Service.use((fs) => fs.rename(source, target)).pipe(Effect.orDie)
+      yield* FSUtil.Service.use((fs) => fs.rename(source, target)).pipe(
+        Effect.catch((cause) =>
+          Effect.fail(
+            new FileWriteError({
+              name: "FileWriteError",
+              data: { reason: "io-error", message: `Failed to rename: ${cause.message}` },
+            }),
+          ),
+        ),
+      )
       return { renamed: true }
     })
 
@@ -218,7 +272,23 @@ export const fileHandlers = HttpApiBuilder.group(InstanceHttpApi, "file", (handl
           data: { reason: "path-out-of-scope", message: "Path escapes the project directory" },
         })
       }
-      yield* FSUtil.Service.use((fs) => fs.remove(target, { recursive: true })).pipe(Effect.orDie)
+      const realpath = yield* FSUtil.resolveRealpath(target)
+      if (!FSUtil.containsStrict(directory, realpath)) {
+        return yield* new FileWriteError({
+          name: "FileWriteError",
+          data: { reason: "path-out-of-scope", message: "Path escapes the project directory" },
+        })
+      }
+      yield* FSUtil.Service.use((fs) => fs.remove(target, { recursive: true })).pipe(
+        Effect.catch((cause) =>
+          Effect.fail(
+            new FileWriteError({
+              name: "FileWriteError",
+              data: { reason: "io-error", message: `Failed to remove: ${cause.message}` },
+            }),
+          ),
+        ),
+      )
       return { removed: true }
     })
 

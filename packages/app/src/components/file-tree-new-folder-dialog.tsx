@@ -6,6 +6,8 @@ import { useDialog } from "@opencode-ai/ui/context/dialog"
 import { useLanguage } from "@/context/language"
 import { useSDK } from "@/context/sdk"
 import { showToast } from "@/utils/toast"
+import { formatServerError } from "@/utils/server-errors"
+import path from "path"
 import type { FileNode } from "@opencode-ai/sdk/v2"
 
 export function FileTreeNewFolderDialog(props: { parent: FileNode; onSuccess?: (path: string) => void }) {
@@ -19,19 +21,17 @@ export function FileTreeNewFolderDialog(props: { parent: FileNode; onSuccess?: (
     const trimmed = name().trim()
     if (!trimmed || busy()) return
     setBusy(true)
-    const target = `${props.parent.path}${trimmed}`
+    const target = path.join(props.parent.path, trimmed)
     try {
-      const result = await sdk().client.file.mkdir({ directory: sdk().directory, path: target })
-      if (result.error) {
-        const error = result.error as { data?: { message?: string }; message?: string }
-        showToast({ variant: "error", title: error.data?.message || error.message || language.t("common.requestFailed") })
-        setBusy(false)
-        return
-      }
+      await sdk().client.file.mkdir({ directory: sdk().directory, path: target })
       props.onSuccess?.(target)
       dialog.close()
-    } catch {
-      showToast({ variant: "error", title: language.t("common.requestFailed") })
+    } catch (err) {
+      showToast({
+        variant: "error",
+        title: language.t("common.requestFailed"),
+        description: formatServerError(err, language.t),
+      })
       setBusy(false)
     }
   }

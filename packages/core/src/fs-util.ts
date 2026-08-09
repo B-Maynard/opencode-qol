@@ -1,5 +1,5 @@
 import { NodeFileSystem } from "@effect/platform-node"
-import { dirname, isAbsolute, join, relative, resolve as pathResolve, sep } from "path"
+import { basename, dirname, isAbsolute, join, relative, resolve as pathResolve, sep } from "path"
 import { realpathSync } from "fs"
 import * as NFS from "fs/promises"
 import { lookup } from "mime-types"
@@ -234,6 +234,21 @@ export namespace FSUtil {
       return resolved
     }
   }
+
+  export const resolveRealpath = Effect.fnUntraced(function* (target: string) {
+    const fs = yield* Service
+    const absolute = pathResolve(target)
+    let current = absolute
+    let suffix = ""
+    while (!(yield* fs.exists(current).pipe(Effect.orElseSucceed(() => false)))) {
+      const parent = dirname(current)
+      if (parent === current) break
+      suffix = join(basename(current), suffix)
+      current = parent
+    }
+    const real = yield* fs.realPath(current).pipe(Effect.orElseSucceed(() => current))
+    return suffix ? join(real, suffix) : real
+  })
 
   export function normalizePathPattern(p: string): string {
     if (process.platform !== "win32") return p

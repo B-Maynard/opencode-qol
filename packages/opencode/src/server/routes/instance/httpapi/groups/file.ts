@@ -144,7 +144,7 @@ export class FileWriteError extends Schema.ErrorClass<FileWriteError>("FileWrite
     name: Schema.Literal("FileWriteError"),
     data: Schema.Struct({
       message: Schema.String,
-      reason: Schema.Literals(["path-out-of-scope", "not-a-file", "binary", "too-large"]),
+      reason: Schema.Literals(["path-out-of-scope", "not-a-file", "binary", "too-large", "io-error"]),
     }),
   },
   { httpApiStatus: 400 },

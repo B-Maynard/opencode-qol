@@ -34,6 +34,10 @@ import { DividerV2 } from "@opencode-ai/ui/v2/divider-v2"
 import { getFilename } from "@opencode-ai/core/util/path"
 import { FileTreeMenuItems, type FileTreeMutation } from "./file-tree-menu"
 
+function fileNodeType(kind: string): "file" | "directory" {
+  return kind === "directory" ? "directory" : "file"
+}
+
 interface DialogSelectDirectoryV2Props {
   title?: string
   multiple?: boolean
@@ -442,7 +446,7 @@ export function DialogSelectDirectoryV2(props: DialogSelectDirectoryV2Props) {
               name: current.item.name,
               path: current.item.path,
               absolute: absoluteTreePath(root() || start() || home(), current.item.path),
-              type: current.item.kind as FileNode["type"],
+              type: fileNodeType(current.item.kind),
               ignored: false,
             }
             return (

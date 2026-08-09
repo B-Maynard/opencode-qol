@@ -384,4 +384,72 @@ describe("FSUtil", () => {
       if (process.platform === "win32") expect(FSUtil.overlaps("C:\\a", "D:\\b")).toBe(false)
     })
   })
+
+  describe("containsStrict rejects project root deletion", () => {
+    test("containsStrict rejects equality", () => {
+      expect(FSUtil.containsStrict("/a/b", "/a/b")).toBe(false)
+    })
+    test("containsStrict allows nested paths", () => {
+      expect(FSUtil.containsStrict("/a/b", "/a/b/c")).toBe(true)
+    })
+    test("containsStrict rejects parent path", () => {
+      expect(FSUtil.containsStrict("/a/b", "/a")).toBe(false)
+    })
+    test("containsStrict rejects sibling paths sharing prefix", () => {
+      expect(FSUtil.containsStrict("/a/b", "/a/bad")).toBe(false)
+      expect(FSUtil.containsStrict("/a/b", "/a/bc")).toBe(false)
+    })
+    test("containsStrict rejects ../ escapes", () => {
+      expect(FSUtil.containsStrict("/a/b", "/a/b/../c")).toBe(false)
+      expect(FSUtil.containsStrict("/a/b", "/a/c")).toBe(false)
+    })
+    test("contains allows equality (used by write/rename/mkdir)", () => {
+      expect(FSUtil.contains("/a/b", "/a/b")).toBe(true)
+      expect(FSUtil.contains("/a/b", "/a/b/c")).toBe(true)
+      expect(FSUtil.contains("/a/b", "/a")).toBe(false)
+    })
+  })
+
+  describe("resolveRealpath", () => {
+    it(
+      "resolves existing paths to their real path",
+      Effect.gen(function* () {
+        const filesys = yield* FileSystem.FileSystem
+        const tmp = yield* filesys.makeTempDirectoryScoped()
+        const dir = path.join(tmp, "real")
+        yield* filesys.makeDirectory(dir)
+
+        const resolved = yield* FSUtil.resolveRealpath(dir)
+        expect(resolved).toBe(dir)
+      }),
+    )
+
+    it(
+      "resolves non-existent paths under an existing directory",
+      Effect.gen(function* () {
+        const filesys = yield* FileSystem.FileSystem
+        const tmp = yield* filesys.makeTempDirectoryScoped()
+        const missing = path.join(tmp, "nope", "deep", "file.txt")
+
+        const resolved = yield* FSUtil.resolveRealpath(missing)
+        expect(resolved).toBe(missing)
+      }),
+    )
+
+    it(
+      "detects symlink escapes via existing parent components",
+      Effect.gen(function* () {
+        const filesys = yield* FileSystem.FileSystem
+        const tmp = yield* filesys.makeTempDirectoryScoped()
+        const outside = yield* filesys.makeTempDirectoryScoped()
+        const link = path.join(tmp, "link")
+        yield* filesys.symlink(outside, link)
+        const escaped = path.join(link, "new-file.txt")
+
+        const resolved = yield* FSUtil.resolveRealpath(escaped)
+        expect(resolved).toBe(path.join(outside, "new-file.txt"))
+        expect(FSUtil.containsStrict(tmp, resolved)).toBe(false)
+      }),
+    )
+  })
 })

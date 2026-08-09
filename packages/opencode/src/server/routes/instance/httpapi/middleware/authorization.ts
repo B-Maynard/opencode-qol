@@ -76,7 +76,12 @@ function credentialFromRequest(request: HttpServerRequest.HttpServerRequest) {
 
 function credentialFromURL(url: URL, request: HttpServerRequest.HttpServerRequest) {
   const token = url.searchParams.get(AUTH_TOKEN_QUERY)
-  if (token) return decodeCredential(token)
+  if (token) {
+    const host = url.hostname
+    if (host === "localhost" || host === "127.0.0.1" || host === "::1") {
+      return decodeCredential(token)
+    }
+  }
   const match = /^Basic\s+(.+)$/i.exec(request.headers.authorization ?? "")
   if (match) return decodeCredential(match[1])
   return Effect.succeed(emptyCredential())

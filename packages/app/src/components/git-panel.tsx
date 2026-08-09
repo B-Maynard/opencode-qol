@@ -9,14 +9,13 @@ import { useDialog } from "@opencode-ai/ui/context/dialog"
 import { useLanguage } from "@/context/language"
 import { useSDK } from "@/context/sdk"
 import { showToast } from "@/utils/toast"
+import { formatServerError } from "@/utils/server-errors"
 
 type Branch = { name: string; current: boolean }
 const NEW_BRANCH_OPTION = "\0new-branch"
 
 const showError = (fallback: string, error: unknown) => {
-  const message =
-    (error as { data?: { message?: string } })?.data?.message ?? fallback
-  showToast({ variant: "error", title: message })
+  showToast({ variant: "error", title: formatServerError(error, undefined, fallback) })
 }
 
 export function GitPanel(props: {
@@ -199,8 +198,12 @@ export function GitPanel(props: {
               size="small"
               variant="secondary"
               onClick={async () => {
-                await props.onStage(allUnstagedPaths())
-                generate()
+                try {
+                  await props.onStage(allUnstagedPaths())
+                  generate()
+                } catch {
+                  // already toasted by stageFiles
+                }
               }}
               disabled={busy()}
             >
@@ -229,8 +232,12 @@ export function GitPanel(props: {
                     title={language.t("session.git.stage")}
                     aria-label={language.t("session.git.stage")}
                     onClick={async () => {
-                      await props.onStage([file.file])
-                      if (props.staged().length + 1 >= props.files().length) generate()
+                      try {
+                        await props.onStage([file.file])
+                        if (props.staged().length + 1 >= props.files().length) generate()
+                      } catch {
+                        // already toasted by stageFiles
+                      }
                     }}
                   />
                 </li>

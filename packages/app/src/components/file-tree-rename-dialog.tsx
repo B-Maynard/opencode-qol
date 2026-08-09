@@ -6,6 +6,7 @@ import { useDialog } from "@opencode-ai/ui/context/dialog"
 import { useLanguage } from "@/context/language"
 import { useSDK } from "@/context/sdk"
 import { showToast } from "@/utils/toast"
+import { formatServerError } from "@/utils/server-errors"
 import type { FileNode } from "@opencode-ai/sdk/v2"
 
 export function FileTreeRenameDialog(props: { node: FileNode; onSuccess?: (newPath: string) => void }) {
@@ -20,20 +21,19 @@ export function FileTreeRenameDialog(props: { node: FileNode; onSuccess?: (newPa
     if (!trimmed || trimmed === props.node.name || busy()) return
     setBusy(true)
     try {
-      const result = await sdk().client.file.rename({ directory: sdk().directory, path: props.node.path, newName: trimmed })
-      if (result.error) {
-        const error = result.error as { data?: { message?: string }; message?: string }
-        showToast({ variant: "error", title: language.t("fileTree.rename.failed"), description: error.data?.message || error.message })
-        setBusy(false)
-        return
-      }
+      await sdk().client.file.rename({ directory: sdk().directory, path: props.node.path, newName: trimmed })
+      // v2 file tree uses "/" as separator for all paths (virtual tree, not FS).
       const separator = props.node.path.lastIndexOf("/")
       const parent = separator === -1 ? "" : props.node.path.slice(0, separator + 1)
       const trailing = props.node.path.endsWith("/") ? "/" : ""
       props.onSuccess?.(`${parent}${trimmed}${trailing}`)
       dialog.close()
-    } catch {
-      showToast({ variant: "error", title: language.t("fileTree.rename.failed") })
+    } catch (err) {
+      showToast({
+        variant: "error",
+        title: language.t("fileTree.rename.failed"),
+        description: formatServerError(err, language.t),
+      })
       setBusy(false)
     }
   }

@@ -725,6 +725,7 @@ export default function Page() {
           title: language.t("common.requestFailed"),
           description: formatServerError(err, language.t),
         })
+        throw err
       })
   }
   const unstageFiles = (files: string[]) => {

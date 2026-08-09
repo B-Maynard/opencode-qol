@@ -1,25 +1,30 @@
+import { createSignal } from "solid-js"
 import { Dialog, DialogFooter, DialogHeader, DialogTitleGroup } from "@opencode-ai/ui/v2/dialog-v2"
 import { ButtonV2 } from "@opencode-ai/ui/v2/button-v2"
 import { useDialog } from "@opencode-ai/ui/context/dialog"
 import { useLanguage } from "@/context/language"
 import { useSDK } from "@/context/sdk"
 import { showToast } from "@/utils/toast"
+import { formatServerError } from "@/utils/server-errors"
 import type { FileNode } from "@opencode-ai/sdk/v2"
 
 export function FileTreeDeleteDialog(props: { node: FileNode; onSuccess?: () => void }) {
   const language = useLanguage()
   const sdk = useSDK()
   const dialog = useDialog()
+  const [busy, setBusy] = createSignal(false)
 
   const handleDelete = async () => {
-    const result = await sdk().client.file.remove({ directory: sdk().directory, path: props.node.path })
-    if (result.error) {
-      const error = result.error as { data?: { message?: string }; message?: string }
-      showToast({ variant: "error", title: language.t("fileTree.delete.failed"), description: error.data?.message || error.message })
-      return
+    if (busy()) return
+    setBusy(true)
+    try {
+      await sdk().client.file.remove({ directory: sdk().directory, path: props.node.path })
+      props.onSuccess?.()
+      dialog.close()
+    } catch (err) {
+      showToast({ variant: "error", title: language.t("fileTree.delete.failed"), description: formatServerError(err, language.t) })
+      setBusy(false)
     }
-    props.onSuccess?.()
-    dialog.close()
   }
 
   const isDir = props.node.type === "directory"
@@ -36,10 +41,10 @@ export function FileTreeDeleteDialog(props: { node: FileNode; onSuccess?: () => 
         />
       </DialogHeader>
       <DialogFooter>
-        <ButtonV2 variant="neutral" onClick={() => dialog.close()}>
+        <ButtonV2 variant="neutral" onClick={() => dialog.close()} disabled={busy()}>
           {language.t("common.cancel")}
         </ButtonV2>
-        <ButtonV2 variant="danger" onClick={() => void handleDelete()}>
+        <ButtonV2 variant="danger" disabled={busy()} onClick={() => void handleDelete()}>
           {language.t("common.delete")}
         </ButtonV2>
       </DialogFooter>
