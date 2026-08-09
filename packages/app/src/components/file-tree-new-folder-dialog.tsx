@@ -19,7 +19,7 @@ export function FileTreeNewFolderDialog(props: { parent: FileNode; onSuccess?: (
     const trimmed = name().trim()
     if (!trimmed || busy()) return
     setBusy(true)
-    const target = props.parent.path ? `${props.parent.path}/${trimmed}` : trimmed
+    const target = `${props.parent.path}${trimmed}`
     try {
       const result = await sdk().client.file.mkdir({ directory: sdk().directory, path: target })
       if (result.error) {

@@ -212,7 +212,7 @@ export const fileHandlers = HttpApiBuilder.group(InstanceHttpApi, "file", (handl
     const remove = Effect.fn("FileHttpApi.remove")(function* (ctx: { payload: { path: string } }) {
       const directory = (yield* InstanceState.context).directory
       const target = path.resolve(directory, ctx.payload.path)
-      if (!FSUtil.contains(directory, target)) {
+      if (!FSUtil.containsStrict(directory, target)) {
         return yield* new FileWriteError({
           name: "FileWriteError",
           data: { reason: "path-out-of-scope", message: "Path escapes the project directory" },

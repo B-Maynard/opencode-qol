@@ -271,4 +271,9 @@ export namespace FSUtil {
     const result = relative(parent, child)
     return result === "" || (!isAbsolute(result) && result !== ".." && !result.startsWith(`..${sep}`))
   }
+
+  export function containsStrict(parent: string, child: string) {
+    const result = relative(parent, child)
+    return result !== "" && !isAbsolute(result) && result !== ".." && !result.startsWith(`..${sep}`)
+  }
 }

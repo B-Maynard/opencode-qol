@@ -92,10 +92,6 @@ export function GitPanel(props: {
   }
 
   const generate = async () => {
-    if (!props.staged().length) {
-      showToast({ variant: "error", title: language.t("session.git.generateNoStaged") })
-      return
-    }
     setGenerating(true)
     try {
       const result = await sdk().client.vcs.commitMessage()
@@ -202,9 +198,15 @@ export function GitPanel(props: {
             <Button
               size="small"
               variant="secondary"
-              onClick={() => props.onStage(allUnstagedPaths())}
+              onClick={() => {
+                props.onStage(allUnstagedPaths())
+                generate()
+              }}
+              disabled={busy() || generating()}
             >
-              {language.t("session.git.stageAll")}
+              <Show when={generating()} fallback={language.t("session.git.stageAll")}>
+                <Spinner class="size-3.5" />
+              </Show>
             </Button>
           </div>
           <ul class="flex flex-col gap-0.5">
@@ -243,16 +245,6 @@ export function GitPanel(props: {
           placeholder={language.t("session.git.commitMessage")}
         />
         <div class="flex gap-1.5">
-          <Button
-            variant="secondary"
-            size="small"
-            onClick={generate}
-            disabled={busy() || generating()}
-          >
-            <Show when={generating()} fallback={language.t("session.git.generateCommitMessage")}>
-              <Spinner class="size-3.5" />
-            </Show>
-          </Button>
           <Button
             variant="primary"
             size="small"

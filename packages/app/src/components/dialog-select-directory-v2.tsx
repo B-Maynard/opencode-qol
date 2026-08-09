@@ -243,11 +243,23 @@ export function DialogSelectDirectoryV2(props: DialogSelectDirectoryV2Props) {
 
   function handleMutation(mutation: FileTreeMutation) {
     if (mutation.type === "add") {
-      tree?.batch([{ type: "add", path: mutation.path.endsWith("/") ? mutation.path : `${mutation.path}/` }])
+      try {
+        tree?.batch([{ type: "add", path: mutation.path.endsWith("/") ? mutation.path : `${mutation.path}/` }])
+      } catch {
+        // path already absent after disk mutation
+      }
     } else if (mutation.type === "move" && mutation.newPath) {
-      tree?.move(mutation.path, mutation.newPath)
+      try {
+        tree?.move(mutation.path, mutation.newPath)
+      } catch {
+        // path already absent after disk mutation
+      }
     } else {
-      tree?.remove(mutation.path, { recursive: true })
+      try {
+        tree?.remove(mutation.path, { recursive: true })
+      } catch {
+        // path already absent after disk mutation
+      }
     }
     menu()?.close()
   }

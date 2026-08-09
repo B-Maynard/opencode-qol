@@ -12,18 +12,14 @@ export function FileTreeDeleteDialog(props: { node: FileNode; onSuccess?: () => 
   const dialog = useDialog()
 
   const handleDelete = async () => {
-    try {
-      const result = await sdk().client.file.remove({ directory: sdk().directory, path: props.node.path })
-      if (result.error) {
-        const error = result.error as { data?: { message?: string }; message?: string }
-        showToast({ variant: "error", title: language.t("fileTree.delete.failed"), description: error.data?.message || error.message })
-        return
-      }
-      props.onSuccess?.()
-      dialog.close()
-    } catch {
-      showToast({ variant: "error", title: language.t("fileTree.delete.failed") })
+    const result = await sdk().client.file.remove({ directory: sdk().directory, path: props.node.path })
+    if (result.error) {
+      const error = result.error as { data?: { message?: string }; message?: string }
+      showToast({ variant: "error", title: language.t("fileTree.delete.failed"), description: error.data?.message || error.message })
+      return
     }
+    props.onSuccess?.()
+    dialog.close()
   }
 
   const isDir = props.node.type === "directory"
