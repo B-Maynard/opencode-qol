@@ -21,6 +21,7 @@ import type {
 import FileTreeV2 from "@/components/file-tree-v2"
 import { useLanguage } from "@/context/language"
 import { useSDK } from "@/context/sdk"
+import { useSettings } from "@/context/settings"
 import {
   filterRenderableDiff,
   filterReviewFiles,
@@ -42,6 +43,7 @@ export type ReviewPanelV2Props = {
   loadDiff?: (path: string, version?: number) => Promise<RenderDiff | undefined>
   activeFile?: string
   onSelectFile: (path: string) => void
+  onEditFile?: (path: string) => void
   diffStyle: SessionReviewDiffStyle
   onDiffStyleChange?: (style: SessionReviewDiffStyle) => void
   state: ReviewPanelV2State
@@ -56,6 +58,8 @@ export type ReviewPanelV2Props = {
 
 export function ReviewPanelV2(props: ReviewPanelV2Props) {
   const sdk = useSDK()
+  const settings = useSettings()
+  const canEdit = () => settings.general.programmingMode() && !!props.onEditFile
 
   const diffs = createMemo(() => props.diffs().filter(filterRenderableDiff))
   const filteredFiles = createMemo(() =>
@@ -123,6 +127,8 @@ export function ReviewPanelV2(props: ReviewPanelV2Props) {
           state={props.state}
           diffsReady={props.diffsReady}
           onSelectFile={props.onSelectFile}
+          canEdit={canEdit}
+          onEditFile={props.onEditFile}
           diffs={diffs}
           filteredFiles={filteredFiles}
           searching={searching}
@@ -158,6 +164,7 @@ export function ReviewPanelV2(props: ReviewPanelV2Props) {
                   comments={props.comments}
                   focusedComment={props.focusedComment}
                   onFocusedCommentChange={props.onFocusedCommentChange}
+                  onEditFile={canEdit() ? props.onEditFile : undefined}
                 />
               )}
             </Show>
@@ -173,6 +180,8 @@ function ReviewPanelV2Sidebar(props: {
   state: ReviewPanelV2State
   diffsReady: () => boolean
   onSelectFile: (path: string) => void
+  canEdit: () => boolean
+  onEditFile?: (path: string) => void
   diffs: () => RenderDiff[]
   filteredFiles: () => string[]
   searching: () => boolean
@@ -230,6 +239,7 @@ function ReviewPanelV2Sidebar(props: {
               draggable={false}
               active={props.activeDiff()}
               onFileClick={(node) => props.onSelectFile(node.path)}
+              onEditFile={props.canEdit() ? props.onEditFile : undefined}
             />
           }
         >
@@ -246,6 +256,7 @@ function ReviewPanelV2Sidebar(props: {
                 setExplicitHighlight(path)
                 props.onSelectFile(path)
               }}
+              onEditFile={props.canEdit() ? props.onEditFile : undefined}
             />
           </Show>
         </Show>

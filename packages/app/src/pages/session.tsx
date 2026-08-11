@@ -1407,6 +1407,7 @@ export default function Page() {
       return activeReviewFile()
     },
     onSelectFile: focusReviewDiff,
+    onEditFile: (path: string) => openMobileFileTab(path, true),
     get diffStyle() {
       return layout.review.diffStyle()
     },

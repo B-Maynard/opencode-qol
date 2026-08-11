@@ -73,6 +73,7 @@ export function DialogSelectDirectoryV2(props: DialogSelectDirectoryV2Props) {
   const listings = new Map<string, Promise<Array<{ name: string; type: "file" | "directory" }> | undefined>>()
   const loads = createPriorityTaskQueue<Array<{ name: string; type: "file" | "directory" }> | undefined>(3)
   const advanced = new Set<string>()
+  const applied = new Set<string>()
   let tree: FileTree | undefined
   let container: HTMLDivElement | undefined
   let pathArea: HTMLDivElement | undefined
@@ -158,7 +159,10 @@ export function DialogSelectDirectoryV2(props: DialogSelectDirectoryV2Props) {
       if (!key) setError(true)
       return false
     }
-    tree?.batch(policy.entries(key, nodes).map((item) => ({ type: "add", path: item })))
+    if (!applied.has(key)) {
+      tree?.batch(policy.entries(key, nodes).map((item) => ({ type: "add", path: item })))
+      applied.add(key)
+    }
     if (!eager && advanceTreePreload(advanced, key)) {
       for (const directory of preloadTreeDirectories(key, nodes)) void load(directory, generation, true)
     }
@@ -178,6 +182,7 @@ export function DialogSelectDirectoryV2(props: DialogSelectDirectoryV2Props) {
     setInput(displayPickerPath(value, value, home()))
     listings.clear()
     advanced.clear()
+    applied.clear()
     tree?.resetPaths([])
     const valid = await load("", token)
     if (!activeTreeNavigation(token, navigation)) return

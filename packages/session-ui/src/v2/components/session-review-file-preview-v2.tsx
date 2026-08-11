@@ -26,6 +26,9 @@ import { createLineCommentControllerV2 } from "./line-comment-annotations-v2"
 import { shouldVirtualizeReviewDiff } from "./session-review-file-preview-v2-virtualize"
 import { LineCommentV2OverflowIcon } from "@opencode-ai/ui/v2/line-comment-v2"
 import { MenuV2 } from "@opencode-ai/ui/v2/menu-v2"
+import { Icon } from "@opencode-ai/ui/v2/icon"
+import { IconButtonV2 } from "@opencode-ai/ui/v2/icon-button-v2"
+import { TooltipV2 } from "@opencode-ai/ui/v2/tooltip-v2"
 import "./session-review-v2.css"
 
 type ReviewDiff = (SnapshotFileDiff & { file: string }) | FileDiffInfo | VcsFileDiff
@@ -43,6 +46,7 @@ export type SessionReviewFilePreviewV2Props = {
   comments?: SessionReviewComment[]
   focusedComment?: SessionReviewFocus | null
   onFocusedCommentChange?: (focus: SessionReviewFocus | null) => void
+  onEditFile?: (path: string) => void
 }
 
 function statusLabel(status: ViewDiff["status"]) {
@@ -264,6 +268,21 @@ export function SessionReviewFilePreviewV2(props: SessionReviewFilePreviewV2Prop
             <span data-slot="session-review-v2-file-path">{getDirectory(props.file)}</span>
           </Show>
         </div>
+        <Show when={props.onEditFile}>
+          <TooltipV2 value={i18n.t("session.review.editFile")} placement="top">
+            <IconButtonV2
+              data-slot="session-review-v2-file-edit"
+              variant="ghost-muted"
+              size="small"
+              aria-label={i18n.t("session.review.editFile")}
+              onClick={(event) => {
+                event.stopPropagation()
+                props.onEditFile?.(props.file)
+              }}
+              icon={<Icon name="edit" />}
+            />
+          </TooltipV2>
+        </Show>
         <div data-slot="session-review-v2-file-diff">
           <DiffChanges changes={view()} />
         </div>

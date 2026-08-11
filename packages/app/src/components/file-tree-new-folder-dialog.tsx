@@ -7,7 +7,6 @@ import { useLanguage } from "@/context/language"
 import { useSDK } from "@/context/sdk"
 import { showToast } from "@/utils/toast"
 import { formatServerError } from "@/utils/server-errors"
-import path from "path"
 import type { FileNode } from "@opencode-ai/sdk/v2"
 
 export function FileTreeNewFolderDialog(props: { parent: FileNode; onSuccess?: (path: string) => void }) {
@@ -21,7 +20,8 @@ export function FileTreeNewFolderDialog(props: { parent: FileNode; onSuccess?: (
     const trimmed = name().trim()
     if (!trimmed || busy()) return
     setBusy(true)
-    const target = path.join(props.parent.path, trimmed)
+    const parent = props.parent.path.replace(/\/+$/, "")
+    const target = parent ? `${parent}/${trimmed}` : trimmed
     try {
       await sdk().client.file.mkdir({ directory: sdk().directory, path: target })
       props.onSuccess?.(target)

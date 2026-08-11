@@ -1,5 +1,7 @@
 import { useFile } from "@/context/file"
+import { useLanguage } from "@/context/language"
 import { FileIcon } from "@opencode-ai/ui/file-icon"
+import { Tooltip } from "@opencode-ai/ui/tooltip"
 import "@opencode-ai/ui/v2/file-tree-v2.css"
 import {
   createEffect,
@@ -62,6 +64,7 @@ const FileTreeNodeV2 = (
       active?: string
       draggable: boolean
       kinds?: ReadonlyMap<string, Kind>
+      onEditFile?: (path: string) => void
       as?: "div" | "button"
     },
 ) => {
@@ -71,12 +74,14 @@ const FileTreeNodeV2 = (
     "active",
     "draggable",
     "kinds",
+    "onEditFile",
     "as",
     "children",
     "class",
     "classList",
   ])
   const kind = () => local.kinds?.get(normalizeFileTreeV2Path(local.node.path))
+  const language = useLanguage()
 
   return (
     <Dynamic
@@ -86,6 +91,7 @@ const FileTreeNodeV2 = (
       data-selected={local.node.path === local.active ? "" : undefined}
       data-ignored={local.node.ignored ? "" : undefined}
       classList={{
+        group: true,
         ...local.classList,
         [local.class ?? ""]: !!local.class,
       }}
@@ -104,6 +110,29 @@ const FileTreeNodeV2 = (
       <span class="flex-1 min-w-0 text-start text-12-medium whitespace-nowrap truncate">
         <bdi dir="auto">{local.node.name}</bdi>
       </span>
+      {local.onEditFile && local.node.type === "file" && (
+        <Tooltip value={language.t("session.review.editFile")} placement="top" gutter={4}>
+          <div
+            data-slot="file-tree-v2-edit-button"
+            role="button"
+            tabIndex={0}
+            aria-label={language.t("session.review.editFile")}
+            class="hover-reveal group-hover:opacity-100 focus-visible:opacity-100 text-text-muted hover:text-text-base"
+            onClick={(e) => {
+              e.stopPropagation()
+              local.onEditFile?.(local.node.path)
+            }}
+            onKeyDown={(e) => {
+              if (e.key !== "Enter" && e.key !== " ") return
+              e.stopPropagation()
+              e.preventDefault()
+              local.onEditFile?.(local.node.path)
+            }}
+          >
+            <Icon name="edit" size="small" />
+          </div>
+        </Tooltip>
+      )}
       {(() => {
         const value = kind()
         if (!value || local.node.type !== "file") return null
@@ -132,6 +161,7 @@ export default function FileTreeV2(props: {
   draggable?: boolean
   onFileClick?: (file: FileNode) => void
   onFileDoubleClick?: (file: FileNode) => void
+  onEditFile?: (path: string) => void
 }) {
   const file = useFile()
   const live = () => props.allowed === undefined
@@ -250,6 +280,7 @@ export default function FileTreeV2(props: {
                               active={active()}
                               draggable={draggable()}
                               kinds={props.kinds}
+                              onEditFile={props.onEditFile}
                               as="button"
                               type="button"
                               class="relative"
@@ -284,6 +315,7 @@ export default function FileTreeV2(props: {
                             active={active()}
                             draggable={draggable()}
                             kinds={props.kinds}
+                            onEditFile={props.onEditFile}
                             as="button"
                             type="button"
                             class="relative"

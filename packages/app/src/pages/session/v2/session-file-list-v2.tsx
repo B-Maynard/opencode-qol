@@ -6,6 +6,9 @@ import { kindChange, kindLabel, type Kind } from "@/components/file-tree-v2"
 import { normalizePath } from "@/pages/session/v2/review-diff-kinds"
 import { createVirtualizer, defaultRangeExtractor } from "@tanstack/solid-virtual"
 import { virtualScrollElement } from "@/components/virtual-scroll-element"
+import { Icon } from "@opencode-ai/ui/v2/icon"
+import { Tooltip } from "@opencode-ai/ui/tooltip"
+import { useLanguage } from "@/context/language"
 
 // Drives the highlight/selection of the flat search-result list from the filter
 // input's keyboard events.
@@ -48,8 +51,10 @@ export function SessionFileListV2(props: {
   optionID?: (path: string) => string
   onFileClick: (path: string) => void
   onFileDoubleClick?: (path: string) => void
+  onEditFile?: (path: string) => void
 }) {
   const active = () => normalizePath(props.active ?? "")
+  const language = useLanguage()
   const highlighted = () => normalizePath(props.highlighted ?? "")
   const normalized = createMemo(() => props.files.map(normalizePath))
   const [root, setRoot] = createSignal<HTMLDivElement>()
@@ -111,6 +116,7 @@ export function SessionFileListV2(props: {
             <Show when={virtualItemByKey().get(key)}>
               {(item) => (
                 <div
+                  class="relative group"
                   style={{
                     position: "absolute",
                     top: "0",
@@ -155,6 +161,22 @@ export function SessionFileListV2(props: {
                       )}
                     </Show>
                   </button>
+                  <Show when={props.onEditFile}>
+                    <Tooltip value={language.t("session.review.editFile")} placement="top" gutter={4}>
+                      <button
+                        data-slot="file-tree-v2-edit-button"
+                        type="button"
+                        aria-label={language.t("session.review.editFile")}
+                        class="hover-reveal group-hover:opacity-100 focus-visible:opacity-100 absolute end-1 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-base"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          props.onEditFile?.(path)
+                        }}
+                      >
+                        <Icon name="edit" size="small" />
+                      </button>
+                    </Tooltip>
+                  </Show>
                 </div>
               )}
             </Show>
