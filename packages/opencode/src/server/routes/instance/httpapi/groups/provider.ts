@@ -81,6 +81,30 @@ export const ProviderApi = HttpApi.make("provider")
             description: "Handle the OAuth callback from a provider after user authorization.",
           }),
         ),
+        HttpApiEndpoint.post("fetchModels", `${root}/fetch-models`, {
+          payload: Schema.Struct({
+            baseURL: Schema.String,
+            apiKey: Schema.String,
+          }),
+          success: described(
+            Schema.Struct({
+              data: Schema.Array(
+                Schema.Struct({
+                  id: Schema.String,
+                  name: Schema.optional(Schema.String),
+                }),
+              ),
+            }),
+            "List of available models",
+          ),
+          error: ProviderAuthApiError,
+        }).annotateMerge(
+          OpenApi.annotations({
+            identifier: "provider.fetch-models",
+            summary: "Fetch models from provider",
+            description: "Fetch available models from an OpenAI-compatible provider endpoint.",
+          }),
+        ),
       )
       .annotateMerge(
         OpenApi.annotations({

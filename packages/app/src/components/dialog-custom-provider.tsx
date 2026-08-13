@@ -3,10 +3,11 @@ import { useDialog } from "@opencode-ai/ui/context/dialog"
 import { Dialog } from "@opencode-ai/ui/dialog"
 import { IconButton } from "@opencode-ai/ui/icon-button"
 import { ProviderIcon } from "@opencode-ai/ui/provider-icon"
+import { Spinner } from "@opencode-ai/ui/spinner"
 import { useMutation } from "@tanstack/solid-query"
 import { TextField } from "@opencode-ai/ui/text-field"
 import { showToast } from "@/utils/toast"
-import { batch, For } from "solid-js"
+import { batch, For, Show } from "solid-js"
 import { createStore, produce } from "solid-js/store"
 import { ExternalLink } from "@/components/external-link"
 import { useServerSDK } from "@/context/server-sdk"
@@ -92,6 +93,62 @@ export function CustomProviderForm(props: { autofocus?: boolean } = {}) {
         rows.splice(index, 1)
       }),
     )
+  }
+
+  const [sync, setSync] = createStore({ loading: false, error: "" })
+
+  const canSync = () =>
+    /^https?:\/\//i.test(form.baseURL.trim()) &&
+    form.apiKey.trim() !== "" &&
+    !/^\{env:[^}]+\}$/.test(form.apiKey.trim())
+
+  const syncModels = async () => {
+    if (sync.loading) return
+    setSync({ loading: true, error: "" })
+    try {
+      const sdk = serverSDK()
+      const http = sdk.server.http
+      const auth = http.password
+        ? { Authorization: `Basic ${btoa(`${http.username ?? "opencode"}:${http.password}`)}` }
+        : undefined
+      const res = await fetch(`${http.url}/provider/fetch-models`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...auth },
+        body: JSON.stringify({
+          baseURL: form.baseURL.trim(),
+          apiKey: form.apiKey.trim(),
+        }),
+        signal: AbortSignal.timeout(8_000),
+      })
+      if (!res.ok) {
+        const text = await res.text().catch(() => "")
+        let message = ""
+        try {
+          const parsed = JSON.parse(text)
+          message = parsed?.data?.message ?? parsed?.message ?? ""
+        } catch {}
+        throw new Error(message || `Server returned ${res.status}`)
+      }
+      const contentType = res.headers.get("content-type") ?? ""
+      if (!contentType.includes("application/json")) {
+        throw new Error("Server returned unexpected response (restart the backend)")
+      }
+      const body = (await res.json()) as { data?: Array<{ id?: unknown; name?: unknown }> }
+      const existing = new Set(form.models.map((m) => m.id.trim()).filter(Boolean))
+      const added = (Array.isArray(body.data) ? body.data : []).flatMap((m) => {
+        const id = typeof m?.id === "string" ? m.id.trim() : ""
+        if (!id || existing.has(id)) return []
+        existing.add(id)
+        const name = typeof m?.name === "string" && m.name.trim() ? m.name : id
+        return [{ ...modelRow(), id, name }]
+      })
+      if (added.length > 0) setForm("models", (prev) => [...prev, ...added])
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e)
+      setSync("error", message || language.t("provider.custom.models.syncError"))
+    } finally {
+      setSync("loading", false)
+    }
   }
 
   const setField = (key: "providerID" | "name" | "baseURL" | "apiKey", value: string) => {
@@ -228,7 +285,23 @@ export function CustomProviderForm(props: { autofocus?: boolean } = {}) {
         </div>
 
         <div class="flex flex-col gap-3">
-          <label class="text-12-medium text-text-weak">{language.t("provider.custom.models.label")}</label>
+          <div class="flex items-center justify-between">
+            <label class="text-12-medium text-text-weak">{language.t("provider.custom.models.label")}</label>
+            <Button
+              type="button"
+              size="small"
+              variant="ghost"
+              onClick={() => void syncModels()}
+              disabled={!canSync() || sync.loading}
+            >
+              <Show when={sync.loading} fallback={language.t("provider.custom.models.sync")}>
+                <Spinner class="size-3.5" />
+              </Show>
+            </Button>
+          </div>
+          <Show when={sync.error}>
+            <p class="text-13-regular text-text-danger-base">{sync.error}</p>
+          </Show>
           <For each={form.models}>
             {(m, i) => (
               <div class="flex gap-2 items-start" data-row={m.row}>

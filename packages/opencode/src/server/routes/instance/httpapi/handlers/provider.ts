@@ -104,10 +104,42 @@ export const providerHandlers = HttpApiBuilder.group(InstanceHttpApi, "provider"
       return true
     })
 
+    const fetchModels = Effect.fn("ProviderHttpApi.fetchModels")(function* (ctx: {
+      payload: { baseURL: string; apiKey: string }
+    }) {
+      const { baseURL, apiKey } = ctx.payload
+      const url = `${baseURL.replace(/\/+$/, "")}/models`
+      const res = yield* Effect.tryPromise({
+        try: () =>
+          fetch(url, {
+            headers: { Authorization: `Bearer ${apiKey}` },
+            signal: AbortSignal.timeout(5_000),
+          }),
+        catch: () => new ProviderAuthApiError({ name: "BadRequest", data: { message: "Failed to connect to provider" } }),
+      })
+      if (!res.ok) {
+        return yield* Effect.fail(
+          new ProviderAuthApiError({ name: "BadRequest", data: { message: `Provider returned ${res.status}` } }),
+        )
+      }
+      const body = yield* Effect.tryPromise({
+        try: () => res.json() as Promise<{ data?: Array<{ id?: unknown; name?: unknown }> }>,
+        catch: () => new ProviderAuthApiError({ name: "BadRequest", data: { message: "Invalid response from provider" } }),
+      })
+      const models = (Array.isArray(body.data) ? body.data : []).flatMap((m) => {
+        const id = typeof m?.id === "string" ? m.id.trim() : ""
+        if (!id) return []
+        const name = typeof m?.name === "string" && m.name.trim() ? m.name : undefined
+        return [{ id, name }]
+      })
+      return { data: models }
+    })
+
     return handlers
       .handle("list", list)
       .handle("auth", auth)
       .handleRaw("authorize", authorizeRaw)
       .handle("callback", callback)
+      .handle("fetchModels", fetchModels)
   }),
 )
