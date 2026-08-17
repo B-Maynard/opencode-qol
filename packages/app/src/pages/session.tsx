@@ -97,6 +97,7 @@ import { createReviewPanelV2State } from "@/pages/session/v2/review-panel-v2-sta
 import { reviewDiffDirectory, reviewDiffNeedsLoad, reviewRootDirectory } from "@/pages/session/v2/review-diff-kinds"
 import { TerminalPanel } from "@/pages/session/terminal-panel"
 import { TerminalPanelV2 } from "@/pages/session/terminal-panel-v2"
+import { IdeWorkspace } from "@/pages/session/ide/ide-workspace"
 import { useComposerCommands } from "@/pages/session/use-composer-commands"
 import { useSessionCommands } from "@/pages/session/use-session-commands"
 import { useSessionHashScroll } from "@/pages/session/use-session-hash-scroll"
@@ -453,6 +454,7 @@ export default function Page() {
   )
 
   const isDesktop = createMediaQuery("(min-width: 768px)")
+  const ideMode = createMemo(() => settings.general.programmingMode() && isDesktop())
   const size = createSizing()
   const desktopReviewOpen = createMemo(() => isDesktop() && view().reviewPanel.opened())
   const desktopV2ReviewOpen = createMemo(() => newSessionDesign() && desktopReviewOpen() && !!params.id)
@@ -2455,13 +2457,27 @@ export default function Page() {
   return (
     <SessionRouteFrame>
       <SessionHeader />
-      <div
-        ref={panelRow}
-        class="flex-1 min-h-0 flex flex-col md:flex-row"
-        classList={{
-          "gap-2 p-2": settings.general.newLayoutDesigns(),
-        }}
+      <Show
+        when={!ideMode()}
+        fallback={
+          <IdeWorkspace
+            chat={sessionPanelContent}
+            diffs={() => reviewDiffs().filter((diff): diff is VcsFileDiff => typeof diff.file === "string")}
+            staged={() => stagedFiles() ?? []}
+            onStage={stageFiles}
+            onUnstage={unstageFiles}
+            onCommitSuccess={refreshVcsState}
+            onPushSuccess={refreshVcsState}
+          />
+        }
       >
+        <div
+          ref={panelRow}
+          class="flex-1 min-h-0 flex flex-col md:flex-row"
+          classList={{
+            "gap-2 p-2": settings.general.newLayoutDesigns(),
+          }}
+        >
         <Show when={!isDesktop() && !!params.id && !settings.general.newLayoutDesigns()}>{mobileTabs()}</Show>
 
         <div
@@ -2599,8 +2615,9 @@ export default function Page() {
         </Show>
       </div>
 
-      <Show when={!newSessionDesign()}>
+      <Show when={!newSessionDesign() && !ideMode()}>
         <TerminalPanel />
+      </Show>
       </Show>
     </SessionRouteFrame>
   )

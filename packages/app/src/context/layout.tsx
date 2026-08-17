@@ -32,6 +32,8 @@ const DEFAULT_FILE_TREE_WIDTH = 200
 const DEFAULT_SESSION_WIDTH = 600
 const DEFAULT_TERMINAL_HEIGHT = 280
 const DEFAULT_REVIEW_PANEL_OPENED = false
+const DEFAULT_IDE_LEFT_WIDTH = 240
+const DEFAULT_IDE_CHAT_WIDTH = 360
 export type AvatarColorKey = (typeof AVATAR_COLOR_KEYS)[number]
 
 export function getAvatarColors(key?: string) {
@@ -292,6 +294,10 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
         },
         session: {
           width: DEFAULT_SESSION_WIDTH,
+        },
+        ide: {
+          leftWidth: DEFAULT_IDE_LEFT_WIDTH,
+          chatWidth: DEFAULT_IDE_CHAT_WIDTH,
         },
         mobileSidebar: {
           opened: false,
@@ -749,6 +755,24 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
             return
           }
           setStore("session", "width", width)
+        },
+      },
+      ide: {
+        leftWidth: createMemo(() => store.ide?.leftWidth ?? DEFAULT_IDE_LEFT_WIDTH),
+        resizeLeft(width: number) {
+          if (!store.ide) {
+            setStore("ide", { leftWidth: width, chatWidth: DEFAULT_IDE_CHAT_WIDTH })
+            return
+          }
+          setStore("ide", "leftWidth", width)
+        },
+        chatWidth: createMemo(() => store.ide?.chatWidth ?? DEFAULT_IDE_CHAT_WIDTH),
+        resizeChat(width: number) {
+          if (!store.ide) {
+            setStore("ide", { leftWidth: DEFAULT_IDE_LEFT_WIDTH, chatWidth: width })
+            return
+          }
+          setStore("ide", "chatWidth", width)
         },
       },
       mobileSidebar: {

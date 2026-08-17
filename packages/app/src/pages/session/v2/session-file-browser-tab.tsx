@@ -1,12 +1,10 @@
-import { createEffect, createMemo, createSignal, createUniqueId, on, Show } from "solid-js"
-import { createQuery } from "@tanstack/solid-query"
+import { createMemo, createSignal, Show } from "solid-js"
 import { Button } from "@opencode-ai/ui/button"
 import { Icon } from "@opencode-ai/ui/icon"
 import { SessionFilePanelV2, SessionFilePanelV2Empty } from "@opencode-ai/session-ui/v2/session-file-panel-v2"
 import { SessionReviewV2Sidebar } from "@opencode-ai/session-ui/v2/session-review-v2"
-import FileTreeV2, { type Kind } from "@/components/file-tree-v2"
+import type { Kind } from "@/components/file-tree-v2"
 import { GitPanel } from "@/components/git-panel"
-import { useFile } from "@/context/file"
 import { useLanguage } from "@/context/language"
 import { useLayout } from "@/context/layout"
 import { useSDK } from "@/context/sdk"
@@ -14,10 +12,8 @@ import { useSettings } from "@/context/settings"
 import { displayName } from "@/pages/layout/helpers"
 import { useSessionLayout } from "@/pages/session/session-layout"
 import { SessionFileView } from "@/pages/session/file-tabs"
-import { applyFileListKeyDown, SessionFileListV2 } from "@/pages/session/v2/session-file-list-v2"
+import { createIdeFileSearch, IdeFileBrowserFiles } from "@/pages/session/v2/ide-file-browser"
 import { pathKey } from "@/utils/path-key"
-
-const emptyFiles: string[] = []
 
 export type SessionFileBrowserState = {
   sidebarOpened: () => boolean
@@ -45,38 +41,17 @@ export function SessionFileBrowserTab(props: {
   onCommitSuccess?: () => void
   onPushSuccess?: () => void
 }) {
-  const file = useFile()
   const language = useLanguage()
   const layout = useLayout()
   const sdk = useSDK()
   const settings = useSettings()
   const { workspaceKey } = useSessionLayout()
-  const resultsID = `session-file-browser-results-${createUniqueId()}`
-  const [filter, setFilter] = createSignal("")
-  const [explicitHighlight, setExplicitHighlight] = createSignal<string>()
   const [mode, setMode] = createSignal<"files" | "git">("files")
   const sidebarOpened = () => props.placeholder || props.state.sidebarOpened()
-  const query = createMemo(() => filter().trim())
-  const search = createQuery(() => {
-    const value = query()
-    return {
-      queryKey: ["session-open-file", workspaceKey(), value] as const,
-      enabled: value.length > 0,
-      queryFn: ({ signal }) => file.searchFiles(value, { limit: 200, signal }),
-    }
+  const search = createIdeFileSearch({
+    workspaceKey,
+    onSelectPermanent: props.onSelectPermanent,
   })
-  const files = createMemo(() => {
-    if (!query() || search.isPending) return emptyFiles
-    return [...new Set(search.data ?? emptyFiles)]
-  })
-  const highlighted = createMemo(() => {
-    const values = files()
-    if (values.length === 0) return undefined
-    const explicit = explicitHighlight()
-    if (explicit && values.includes(explicit)) return explicit
-    return values[0]
-  })
-  const loading = createMemo(() => query().length > 0 && search.isPending)
   const project = createMemo(() => {
     const directory = pathKey(sdk().directory)
     return layout.projects
@@ -87,20 +62,6 @@ export function SessionFileBrowserTab(props: {
       )
   })
   const title = createMemo(() => displayName(project() ?? { worktree: sdk().directory }))
-  const optionID = (path: string) => `${resultsID}-option-${files().indexOf(path)}`
-
-  const onFilterKeyDown = (event: KeyboardEvent & { currentTarget: HTMLInputElement }) => {
-    if (event.key === "Escape" && query()) {
-      event.preventDefault()
-      setFilter("")
-      return
-    }
-    if (!query()) return
-    applyFileListKeyDown(event, files(), highlighted(), {
-      onHighlight: setExplicitHighlight,
-      onSelect: props.onSelectPermanent,
-    })
-  }
 
   // Keep the sidebar outside Kobalte Tabs.Content: a morphing content value
   // unmounts the whole panel on every file-tab switch and resets sidebar scroll.
@@ -130,14 +91,14 @@ export function SessionFileBrowserTab(props: {
               </Button>
             </div>
           }
-          filter={filter()}
-          onFilterChange={setFilter}
-          onFilterKeyDown={onFilterKeyDown}
+          filter={search.filter()}
+          onFilterChange={search.setFilter}
+          onFilterKeyDown={search.onFilterKeyDown}
           filterAutofocus={props.placeholder}
           filterRef={props.filterRef}
-          filterControls={resultsID}
-          filterActiveDescendant={highlighted() ? optionID(highlighted()!) : undefined}
-          filterExpanded={query().length > 0 && files().length > 0}
+          filterControls={search.resultsID}
+          filterActiveDescendant={search.highlighted() ? search.optionID(search.highlighted()!) : undefined}
+          filterExpanded={search.query().length > 0 && search.files().length > 0}
           width={props.state.sidebarWidth()}
           onWidthChange={props.state.resizeSidebar}
         >
@@ -155,51 +116,19 @@ export function SessionFileBrowserTab(props: {
               />
             }
           >
-            <Show
-              when={query()}
-              fallback={
-                <FileTreeV2
-                  active={props.active}
-                  kinds={props.kinds}
-                  onFileClick={(node) => props.onSelect(node.path)}
-                  onFileDoubleClick={(node) => props.onSelectPermanent(node.path)}
-                />
-              }
-            >
-              <Show
-                when={!loading()}
-                fallback={
-                  <div role="status" class="px-2 py-2 text-12-regular text-text-weak">
-                    {language.t("common.loading")}
-                    {language.t("common.loading.ellipsis")}
-                  </div>
-                }
-              >
-                <Show
-                  when={files().length > 0}
-                  fallback={
-                    <div role="status" class="px-2 py-2 text-12-regular text-text-weak">
-                      {language.t("palette.empty")}
-                    </div>
-                  }
-                >
-                  <SessionFileListV2
-                    id={resultsID}
-                    role="listbox"
-                    optionID={optionID}
-                    files={files()}
-                    kinds={props.kinds}
-                    active={props.active}
-                    highlighted={highlighted()}
-                    onFileClick={(path) => {
-                      setExplicitHighlight(path)
-                      props.onSelect(path)
-                    }}
-                    onFileDoubleClick={props.onSelectPermanent}
-                  />
-                </Show>
-              </Show>
-            </Show>
+            <IdeFileBrowserFiles
+              query={search.query}
+              loading={search.loading}
+              files={search.files}
+              highlighted={search.highlighted}
+              optionID={search.optionID}
+              resultsID={search.resultsID}
+              active={props.active}
+              kinds={props.kinds}
+              onSelect={props.onSelect}
+              onSelectPermanent={props.onSelectPermanent}
+              onHighlight={search.setExplicitHighlight}
+            />
           </Show>
         </SessionReviewV2Sidebar>
       }
