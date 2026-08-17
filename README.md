@@ -56,7 +56,9 @@ This fork adds several quality-of-life improvements on top of standard OpenCode.
 
 **In-App File Editor** — A CodeMirror editor embedded in file tabs. Open any file with `edit://` protocol, edit with syntax highlighting, save with `Ctrl+S` or the save button, and revert unsaved changes.
 
-**Programming Mode** — A settings toggle that opens the Git panel by default in the sidebar and shows a "Code" tab for quick file access.
+**Programming Mode** — A settings toggle that transforms the session into a full IDE layout. Includes a left rail with Files, Git, and Search panels; a center editor with drag-reorderable tabs; a resizable terminal dock at the bottom; and a collapsible chat panel on the right. All panels are resizable and collapsible.
+
+**Find All** — Search through file contents across the project using ripgrep. Results are grouped by file with match highlighting; click a result to open the file at the matching line in the editor.
 
 **Home Session Delete** — Delete sessions directly from the home page with a trash button.
 

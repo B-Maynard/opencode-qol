@@ -1,21 +1,25 @@
-import { createMemo, createSignal, For, onCleanup, Show, type JSX } from "solid-js"
+import { createMemo, createResource, createSignal, For, onCleanup, Show, type JSX } from "solid-js"
 import { DragDropProvider, PointerSensor } from "@dnd-kit/solid"
 import { isSortable } from "@dnd-kit/solid/sortable"
 import { Accessibility, AutoScroller, Feedback, PointerActivationConstraints } from "@dnd-kit/dom"
 import { RestrictToHorizontalAxis } from "@dnd-kit/abstract/modifiers"
 import { RestrictToElement } from "@dnd-kit/dom/modifiers"
+import { Button } from "@opencode-ai/ui/button"
 import { Tabs } from "@opencode-ai/ui/tabs"
 import { ResizeHandle } from "@opencode-ai/ui/resize-handle"
 import { IconButtonV2 } from "@opencode-ai/ui/v2/icon-button-v2"
 import { TooltipV2 } from "@opencode-ai/ui/v2/tooltip-v2"
 import { Icon } from "@opencode-ai/ui/v2/icon"
 import { TextInputV2 } from "@opencode-ai/ui/v2/text-input-v2"
+import { SessionReviewFilePreviewV2 } from "@opencode-ai/session-ui/v2/session-review-file-preview-v2"
+import type { VcsFileDiff } from "@opencode-ai/sdk/v2"
 import { SortableTabV2 } from "@/components/session/session-sortable-tab-v2"
 import { GitPanel } from "@/components/git-panel"
 import { normalizeFileTreeV2Path } from "@/components/file-tree-v2-model"
 import { useFile } from "@/context/file"
 import { useLanguage } from "@/context/language"
 import { useLayout } from "@/context/layout"
+import { useSDK } from "@/context/sdk"
 import { createFileTabListSync } from "@/pages/session/file-tab-scroll"
 import { SessionFileView } from "@/pages/session/file-tabs"
 import { createSessionTabs, createSizing } from "@/pages/session/helpers"
@@ -54,7 +58,7 @@ function IdeRail(props: { active: IdePanel | undefined; onSelect: (panel: IdePan
 
 export function IdeWorkspace(props: {
   chat: () => JSX.Element
-  diffs: () => { file: string; status?: string }[]
+  diffs: () => VcsFileDiff[]
   staged: () => string[]
   onStage: (files: string[]) => Promise<void>
   onUnstage: (files: string[]) => void
@@ -68,6 +72,13 @@ export function IdeWorkspace(props: {
   const size = createSizing()
   const [leftPanel, setLeftPanel] = createSignal<IdePanel | undefined>("files")
   const [chatOpened, setChatOpened] = createSignal(true)
+  const [selectedDiffFile, setSelectedDiffFile] = createSignal<string | undefined>()
+  const sdk = useSDK()
+  const loadDiff = async (filePath: string) => {
+    const diff = props.diffs().find((d) => d.file === filePath)
+    if (!diff) return undefined
+    return diff
+  }
   const search = createIdeFileSearch({
     workspaceKey,
     onSelectPermanent: (path) => openFile(path),
@@ -115,6 +126,8 @@ export function IdeWorkspace(props: {
     const path = file.pathFromTab(next)
     if (path) void file.load(path)
     tabs().setActive(next)
+    // Clear diff view when opening an edit tab
+    if (next.startsWith("edit://")) setSelectedDiffFile(undefined)
   }
 
   const openTab = (tab: string) => {
@@ -134,6 +147,13 @@ export function IdeWorkspace(props: {
   const openFile = (path: string, line?: number) => {
     if (line !== undefined) file.setSelectedLines(path, { start: line, end: line })
     const tab = file.editTab(path)
+    tabs().open(tab)
+    tabs().setActive(tab)
+    void file.load(path)
+  }
+
+  const openFileInView = (path: string) => {
+    const tab = file.tab(path)
     tabs().open(tab)
     tabs().setActive(tab)
     void file.load(path)
@@ -188,7 +208,14 @@ export function IdeWorkspace(props: {
           <Show when={leftPanel() === "git"}>
             <GitPanel
               files={props.diffs}
-              onSelectFile={(path) => openFile(path)}
+              onSelectFile={(path) => {
+                setSelectedDiffFile(path)
+                // Also open a file:// tab so the edit button works
+                const tab = file.tab(path)
+                tabs().open(tab)
+                tabs().setActive(tab)
+                void file.load(path)
+              }}
               staged={props.staged}
               onStage={props.onStage}
               onUnstage={props.onUnstage}
@@ -260,21 +287,67 @@ export function IdeWorkspace(props: {
                   )}
                 </For>
               </Tabs.List>
+              <Show when={activeFileTab() && file.pathFromTab(activeFileTab()!)}>
+                <div class="ml-auto shrink-0 px-2">
+                  <Button
+                    size="small"
+                    variant="secondary"
+                    onClick={() => {
+                      const tab = activeFileTab()
+                      if (!tab) return
+                      const path = file.pathFromTab(tab)
+                      if (!path) return
+                      const next = tab.startsWith("file://") ? file.editTab(path) : file.tab(path)
+                      tabs().open(next)
+                      tabs().setActive(next)
+if (next.startsWith("edit://")) setSelectedDiffFile(undefined)
+                      else setSelectedDiffFile(path)
+                    }}
+                  >
+                    {activeFileTab()?.startsWith("file://") ? language.t("fileEditor.edit") : language.t("session.tab.review")}
+                  </Button>
+                </div>
+              </Show>
             </Tabs>
           </DragDropProvider>
           <div class="min-h-0 flex-1">
-            <Show
-              when={activeFileTab()}
-              keyed
-              fallback={
-                <div class="flex h-full flex-col items-center justify-center gap-3 text-center text-text-weak">
-                  <Icon name="filetree" size="large" />
-                  <div class="text-14-medium text-text-strong">{language.t("session.tab.code")}</div>
-                  <div class="text-13-regular">{language.t("session.files.selectToOpen")}</div>
-                </div>
-              }
-            >
-              {(tab) => <SessionFileView tab={tab} />}
+            <Show when={selectedDiffFile()} keyed>
+              {(diffFile) => {
+                const diff = createMemo(() => props.diffs().find((d) => d.file === diffFile))
+                return (
+                  <Show when={diff()} keyed>
+                    {(d) => (
+                      <SessionReviewFilePreviewV2
+                        file={diffFile}
+                        diff={d}
+                        diffStyle="unified"
+                        onEditFile={(path) => {
+                          const editTab = file.editTab(path)
+                          tabs().open(editTab)
+                          tabs().setActive(editTab)
+                          void file.load(path)
+                          setSelectedDiffFile(undefined)
+                        }}
+                      />
+                    )}
+                  </Show>
+                )
+              }}
+            </Show>
+            <Show when={!selectedDiffFile()}>
+              <Show
+                when={activeFileTab()}
+                keyed
+                fallback={
+                  <div class="flex h-full flex-col items-center justify-center gap-3 text-center text-text-weak">
+                    <Icon name="filetree" size="large" />
+                    <div class="text-14-medium text-text-strong">{language.t("session.tab.code")}</div>
+                    <div class="text-13-regular">{language.t("session.files.selectToOpen")}</div>
+                  </div>
+                }
+              >
+                {(tab) => <SessionFileView tab={tab} />}
+              </Show>
             </Show>
           </div>
         </div>
