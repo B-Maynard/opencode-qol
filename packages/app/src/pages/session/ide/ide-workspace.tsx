@@ -59,6 +59,7 @@ function IdeRail(props: { active: IdePanel | undefined; onSelect: (panel: IdePan
 export function IdeWorkspace(props: {
   chat: () => JSX.Element
   diffs: () => VcsFileDiff[]
+  loadDiff?: (file: string) => Promise<VcsFileDiff | undefined>
   staged: () => string[]
   onStage: (files: string[]) => Promise<void>
   onUnstage: (files: string[]) => void
@@ -74,11 +75,10 @@ export function IdeWorkspace(props: {
   const [chatOpened, setChatOpened] = createSignal(true)
   const [selectedDiffFile, setSelectedDiffFile] = createSignal<string | undefined>()
   const sdk = useSDK()
-  const loadDiff = async (filePath: string) => {
-    const diff = props.diffs().find((d) => d.file === filePath)
-    if (!diff) return undefined
-    return diff
-  }
+  const [diffResource] = createResource(
+    () => selectedDiffFile(),
+    async (file) => props.diffs().find((d) => d.file === file) ?? (await props.loadDiff?.(file)),
+  )
   const search = createIdeFileSearch({
     workspaceKey,
     onSelectPermanent: (path) => openFile(path),
@@ -313,9 +313,18 @@ if (next.startsWith("edit://")) setSelectedDiffFile(undefined)
           <div class="min-h-0 flex-1">
             <Show when={selectedDiffFile()} keyed>
               {(diffFile) => {
-                const diff = createMemo(() => props.diffs().find((d) => d.file === diffFile))
+                const live = () => props.diffs().find((d) => d.file === diffFile)
+                const diff = () => live() ?? diffResource()
                 return (
-                  <Show when={diff()} keyed>
+                  <Show
+                    when={diff()}
+                    keyed
+                    fallback={
+                      <div class="flex h-full items-center justify-center text-text-weak">
+                        {diffResource.loading ? language.t("session.review.loadingChanges") : language.t("session.review.noChanges")}
+                      </div>
+                    }
+                  >
                     {(d) => (
                       <SessionReviewFilePreviewV2
                         file={diffFile}

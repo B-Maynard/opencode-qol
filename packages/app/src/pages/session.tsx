@@ -808,8 +808,8 @@ export default function Page() {
     const directory = reviewDiffDirectory(root, file)
     const source = reviewDiffs().find((diff) => diff.file === file)
     const valid = (diff: VcsFileDiff | undefined) => {
-      if (!diff || !source) return
-      if (diff.additions !== source.additions || diff.deletions !== source.deletions) return
+      if (!diff) return
+      if (source && (diff.additions !== source.additions || diff.deletions !== source.deletions)) return
       if (reviewDiffNeedsLoad(diff)) return
       return diff
     }
@@ -2463,6 +2463,7 @@ export default function Page() {
           <IdeWorkspace
             chat={sessionPanelContent}
             diffs={() => reviewDiffs().filter((diff): diff is VcsFileDiff => typeof diff.file === "string")}
+            loadDiff={loadReviewDiff}
             staged={() => stagedFiles() ?? []}
             onStage={stageFiles}
             onUnstage={unstageFiles}
