@@ -98,6 +98,7 @@ const layer = Layer.effect(
         .replace(/^\/+/, "")
         .replace(/\.git\/?$/, "")
         .replace(/\/+$/, "")
+        .toLowerCase()
       if (!host || !pathname) return undefined
       return `${host.toLowerCase()}/${pathname}`
     }

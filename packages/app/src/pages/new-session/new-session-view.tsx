@@ -51,7 +51,9 @@ export function NewSessionView(props: {
                   <Show
                     when={props.workspace.bar.visible()}
                     fallback={
-                      <PromptGitStatus branch={props.workspace.bar.branch()} noGit={!props.workspace.project.git()} />
+                      <Show when={!props.workspace.loading()}>
+                        <PromptGitStatus branch={props.workspace.bar.branch()} noGit={!props.workspace.project.git()} />
+                      </Show>
                     }
                   >
                     <PromptWorkspaceSelector

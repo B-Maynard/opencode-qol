@@ -103,7 +103,7 @@ describe("ProjectV2.resolve", () => {
 
       const result = yield* project.resolve(abs(tmp.path))
 
-      expect(result.id).toBe(remoteID("github.com/Acme/App"))
+      expect(result.id).toBe(remoteID("github.com/acme/app"))
       expect(result.id).not.toBe(ProjectV2.ID.make(yield* Effect.promise(() => rootCommit(tmp.path))))
       expect(result.directory).toBe(yield* real(tmp.path))
       expect(result.vcs?.type).toBe("git")
@@ -126,6 +126,28 @@ describe("ProjectV2.resolve", () => {
 
       const a = yield* project.resolve(abs(ssh.path))
       const b = yield* project.resolve(abs(https.path))
+
+      expect(a.id).toBe(remoteID("github.com/owner/repo"))
+      expect(b.id).toBe(a.id)
+    }),
+  )
+
+  it.live("folds mixed-case remote paths to the same id", () =>
+    Effect.gen(function* () {
+      const lower = yield* Effect.acquireRelease(
+        Effect.promise(() => tmpdir()),
+        (tmp) => Effect.promise(() => tmp[Symbol.asyncDispose]()),
+      )
+      const mixed = yield* Effect.acquireRelease(
+        Effect.promise(() => tmpdir()),
+        (tmp) => Effect.promise(() => tmp[Symbol.asyncDispose]()),
+      )
+      yield* Effect.promise(() => initRepo(lower.path, { commit: true, remote: "git@github.com:owner/repo.git" }))
+      yield* Effect.promise(() => initRepo(mixed.path, { commit: true, remote: "git@github.com:Owner/Repo.git" }))
+      const project = yield* ProjectV2.Service
+
+      const a = yield* project.resolve(abs(lower.path))
+      const b = yield* project.resolve(abs(mixed.path))
 
       expect(a.id).toBe(remoteID("github.com/owner/repo"))
       expect(b.id).toBe(a.id)
