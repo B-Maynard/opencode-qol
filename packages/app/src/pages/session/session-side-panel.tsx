@@ -1,4 +1,4 @@
-import { For, Match, Show, Switch, createEffect, createMemo, on, onCleanup, type JSX } from "solid-js"
+import { For, Match, Show, Switch, createEffect, createMemo, createSignal, on, onCleanup, type JSX } from "solid-js"
 import { createStore } from "solid-js/store"
 import { createMediaQuery } from "@solid-primitives/media"
 import { DragDropProvider as DndKitProvider, PointerSensor } from "@dnd-kit/solid"
@@ -252,6 +252,7 @@ export function SessionSidePanel(props: {
   const [store, setStore] = createStore({
     activeDraggable: undefined as string | undefined,
   })
+  const [gitOpen, setGitOpen] = createSignal(false)
 
   const handleDragStart = (event: unknown) => {
     const id = getDraggableId(event)
@@ -356,21 +357,34 @@ export function SessionSidePanel(props: {
                                 onCleanup(stop)
                               }}
                             >
-<Show when={reviewTab() && props.canReview()}>
-                                <Tabs.Trigger
-                                  value="review"
-                                  id={reviewTabID}
-                                  aria-controls={activeTab() === "review" ? reviewTabPanelID : undefined}
-                                >
-                                  <div class="flex items-center gap-1.5">
-                                    <div>{language.t("session.tab.review")}</div>
-                                    <Show when={props.hasReview()}>
-                                      <div>{props.reviewCount()}</div>
-                                    </Show>
-                                  </div>
-                                </Tabs.Trigger>
-                              </Show>
-                              <Show when={contextOpen()}>
+                                <Show when={reviewTab() && props.canReview()}>
+                                  <Tabs.Trigger
+                                    value="review"
+                                    id={reviewTabID}
+                                    aria-controls={activeTab() === "review" ? reviewTabPanelID : undefined}
+                                  >
+                                    <div class="flex items-center gap-1.5">
+                                      <div>{language.t("session.tab.review")}</div>
+                                      <Show when={props.hasReview()}>
+                                        <div>{props.reviewCount()}</div>
+                                      </Show>
+                                    </div>
+                                  </Tabs.Trigger>
+                                </Show>
+                                <Show when={reviewTab() && props.canReview()}>
+                                  <button
+                                    type="button"
+                                    data-slot="tabs-trigger-wrapper"
+                                    data-value="git"
+                                    aria-pressed={gitOpen()}
+                                    onClick={() => setGitOpen((v) => !v)}
+                                  >
+                                    <span data-slot="tabs-trigger" data-selected={gitOpen() ? "" : undefined}>
+                                      {language.t("session.git.tab")}
+                                    </span>
+                                  </button>
+                                </Show>
+                                <Show when={contextOpen()}>
                                 <Tabs.Trigger
                                   value="context"
                                   closeButton={
@@ -435,7 +449,17 @@ export function SessionSidePanel(props: {
                               data-slot="tabs-content"
                               class="flex flex-col h-full overflow-hidden contain-strict"
                             >
-                              {props.reviewPanel()}
+                              <Show when={gitOpen()} fallback={props.reviewPanel()}>
+                                <GitPanel
+                                  files={diffs}
+                                  onSelectFile={props.focusReviewDiff}
+                                  staged={props.staged}
+                                  onStage={props.onStage}
+                                  onUnstage={props.onUnstage}
+                                  onCommitSuccess={props.onCommitSuccess}
+                                  onPushSuccess={props.onPushSuccess}
+                                />
+                              </Show>
                             </div>
                           </Show>
 
@@ -533,6 +557,19 @@ export function SessionSidePanel(props: {
                                   : language.t("session.tab.review")}
                               </Tabs.Trigger>
                             </Show>
+                            <Show when={reviewTab() && props.canReview()}>
+                              <button
+                                type="button"
+                                data-slot="tabs-trigger-wrapper"
+                                data-value="git"
+                                aria-pressed={gitOpen()}
+                                onClick={() => setGitOpen((v) => !v)}
+                              >
+                                <span data-slot="tabs-trigger" data-selected={gitOpen() ? "" : undefined}>
+                                  {language.t("session.git.tab")}
+                                </span>
+                              </button>
+                            </Show>
                             <Show when={contextOpen()}>
                               <Tabs.Trigger
                                 value="context"
@@ -610,7 +647,17 @@ export function SessionSidePanel(props: {
                             data-slot="tabs-content"
                             class="flex flex-col h-full overflow-hidden contain-strict"
                           >
-                            {props.reviewPanel()}
+                            <Show when={gitOpen()} fallback={props.reviewPanel()}>
+                              <GitPanel
+                                files={diffs}
+                                onSelectFile={props.focusReviewDiff}
+                                staged={props.staged}
+                                onStage={props.onStage}
+                                onUnstage={props.onUnstage}
+                                onCommitSuccess={props.onCommitSuccess}
+                                onPushSuccess={props.onPushSuccess}
+                              />
+                            </Show>
                           </div>
                         </Show>
 
