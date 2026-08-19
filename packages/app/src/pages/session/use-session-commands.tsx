@@ -530,6 +530,12 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       keybind: "ctrl+l",
       onSelect: focusInput,
     }),
+    viewCommand({
+      id: "programmingMode.toggle",
+      title: language.t("command.programmingMode.toggle"),
+      keybind: "mod+shift+g",
+      onSelect: () => settings.general.setProgrammingMode(!settings.general.programmingMode()),
+    }),
   ]
 
   const terminalCmds = () => [
