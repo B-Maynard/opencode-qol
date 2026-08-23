@@ -975,6 +975,8 @@ export const dict = {
   "settings.general.row.shell.description": "Skal som används av terminalen och agentverktygen",
   "settings.general.row.shell.autoDefault": "Auto (standard)",
   "settings.general.row.shell.terminalOnly": "endast terminal",
+  "settings.general.row.commitModel.title": "Commit message model",
+  "settings.general.row.commitModel.description": "Model used to generate commit messages",
   "settings.general.row.appearance.title": "Utseende",
   "settings.general.row.appearance.description": "Anpassa hur OpenCode ser ut på din enhet",
   "settings.general.row.colorScheme.title": "Färgschema",

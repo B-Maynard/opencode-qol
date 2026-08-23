@@ -15,12 +15,14 @@ import { SettingsRowV2 } from "./parts/row"
 import { LayoutRetirementNotice, LayoutTransitionToggle } from "./interface-transition"
 import {
   createAppearanceSettingsController,
+  createCommitModelSettingsController,
   createPermissionScopeController,
   createShellOptions,
   createShellSettingsController,
   createSoundSettingsController,
   soundOptions,
   type AppearanceSettingsController,
+  type CommitModelSettingsController,
   type PermissionScopeController,
   type ShellSettingsController,
   type SoundSettingsController,
@@ -114,6 +116,35 @@ const ShellSetting: Component<{ controller: ShellSettingsController }> = (props)
           return `${option.name} (${language.t("settings.general.row.shell.terminalOnly")})`
         }}
         onSelect={(option) => option && props.controller.select(option.value)}
+      />
+    </SettingsRowV2>
+  )
+}
+
+const CommitModelSetting: Component<{ controller: CommitModelSettingsController }> = (props) => {
+  const language = useLanguage()
+  const options = createMemo(() => [
+    { id: "", name: language.t("common.default"), providerName: "" },
+    ...props.controller.options(),
+  ])
+
+  return (
+    <SettingsRowV2
+      title={language.t("settings.general.row.commitModel.title")}
+      description={language.t("settings.general.row.commitModel.description")}
+    >
+      <SelectV2
+        appearance="inline"
+        data-action="settings-commit-model"
+        options={options()}
+        current={options().find((option) => option.id === props.controller.current()) ?? options()[0]}
+        placement="bottom-end"
+        gutter={6}
+        value={(option) => option.id}
+        label={(option) =>
+          option.providerName ? `${option.name} (${option.providerName})` : option.name
+        }
+        onSelect={(option) => option && props.controller.select(option.id)}
       />
     </SettingsRowV2>
   )
@@ -282,6 +313,7 @@ export const SettingsGeneralV2: Component<{
   const updater = useUpdaterAction()
   const permissionScope = createPermissionScopeController(() => props.sessionID)
   const shell = createShellSettingsController()
+  const commitModel = createCommitModelSettingsController()
   const appearance = createAppearanceSettingsController()
   const sounds = createSoundSettingsController()
   const desktop = createMemo(() => platform.platform === "desktop")
@@ -332,6 +364,8 @@ export const SettingsGeneralV2: Component<{
         <PermissionScopeSetting controller={permissionScope} />
 
         <ShellSetting controller={shell} />
+
+        <CommitModelSetting controller={commitModel} />
 
         <SettingsRowV2
           title={language.t("settings.general.row.reasoningSummaries.title")}

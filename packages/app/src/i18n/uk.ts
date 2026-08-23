@@ -1065,6 +1065,8 @@ export const dict = {
     "Виберіть оболонку для термінала. Сумісні оболонки також використовуються для викликів інструментів агента.",
   "settings.general.row.shell.autoDefault": "Автоматично (за замовчуванням)",
   "settings.general.row.shell.terminalOnly": "тільки термінал",
+  "settings.general.row.commitModel.title": "Commit message model",
+  "settings.general.row.commitModel.description": "Model used to generate commit messages",
   "settings.general.row.appearance.title": "Зовнішній вигляд",
   "settings.general.row.appearance.description": "Налаштуйте вигляд OpenCode на вашому пристрої",
   "settings.general.row.colorScheme.title": "Кольорова схема",

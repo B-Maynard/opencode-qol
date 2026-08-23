@@ -936,6 +936,8 @@ export const dict = {
   "settings.general.row.shell.description": "選擇終端機使用的 Shell。相容的 Shell 也會用於代理程式工具呼叫。",
   "settings.general.row.shell.autoDefault": "自動（預設）",
   "settings.general.row.shell.terminalOnly": "僅限終端機",
+  "settings.general.row.commitModel.title": "Commit message model",
+  "settings.general.row.commitModel.description": "Model used to generate commit messages",
   "settings.general.row.appearance.title": "外觀",
   "settings.general.row.appearance.description": "自訂 OpenCode 在你的裝置上的外觀",
   "settings.general.row.colorScheme.title": "配色方案",

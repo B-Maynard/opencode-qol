@@ -878,6 +878,8 @@ export const dict = {
     "ターミナルで使用するシェルを選択します。互換性のあるシェルはエージェントのツール呼び出しにも使用されます。",
   "settings.general.row.shell.autoDefault": "自動 (デフォルト)",
   "settings.general.row.shell.terminalOnly": "ターミナルのみ",
+  "settings.general.row.commitModel.title": "Commit message model",
+  "settings.general.row.commitModel.description": "Model used to generate commit messages",
   "settings.general.row.appearance.title": "外観",
   "settings.general.row.appearance.description": "デバイスでのOpenCodeの表示をカスタマイズします",
   "settings.general.row.colorScheme.title": "配色",

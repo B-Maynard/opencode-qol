@@ -976,6 +976,8 @@ export const dict = {
   "settings.general.row.shell.description": "Shell ٹرمینل تے ایجنٹ ٹولز دے ذریعہ استعمال کیتا جاندا اے",
   "settings.general.row.shell.autoDefault": "آٹو (پہلے توں طے شدہ)",
   "settings.general.row.shell.terminalOnly": "صرف ٹرمینل",
+  "settings.general.row.commitModel.title": "Commit message model",
+  "settings.general.row.commitModel.description": "Model used to generate commit messages",
   "settings.general.row.appearance.title": "دِکھ",
   "settings.general.row.appearance.description": "اپنے آلے تے OpenCode کیویں لگدا اے، اپنی مرضی دے مطابق بناؤ",
   "settings.general.row.colorScheme.title": "رنگ سکیم",

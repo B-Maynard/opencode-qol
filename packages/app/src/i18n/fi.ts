@@ -869,6 +869,8 @@ export const dict = {
   "settings.general.row.shell.description": "Terminaalin ja agenttityökalujen käyttämä komentotulkki",
   "settings.general.row.shell.autoDefault": "Automaattinen (oletus)",
   "settings.general.row.shell.terminalOnly": "vain terminaali",
+  "settings.general.row.commitModel.title": "Commit message model",
+  "settings.general.row.commitModel.description": "Model used to generate commit messages",
   "settings.general.row.appearance.title": "Ulkonäkö",
   "settings.general.row.appearance.description": "Mukauta, miltä OpenCode näyttää laitteellasi",
   "settings.general.row.colorScheme.title": "Värimalli",

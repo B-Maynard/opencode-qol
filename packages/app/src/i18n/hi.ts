@@ -978,6 +978,8 @@ export const dict = {
   "settings.general.row.shell.description": "शेल का उपयोग टर्मिनल और एजेंट टूल द्वारा किया जाता है",
   "settings.general.row.shell.autoDefault": "स्वतः (डिफ़ॉल्ट)",
   "settings.general.row.shell.terminalOnly": "केवल टर्मिनल",
+  "settings.general.row.commitModel.title": "Commit message model",
+  "settings.general.row.commitModel.description": "Model used to generate commit messages",
   "settings.general.row.appearance.title": "उपस्थिति",
   "settings.general.row.appearance.description": "अनुकूलित करें कि OpenCode आपके डिवाइस पर कैसा दिखता है",
   "settings.general.row.colorScheme.title": "रंग योजना",

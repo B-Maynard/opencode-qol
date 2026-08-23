@@ -4,6 +4,7 @@ import { useTheme } from "@opencode-ai/ui/theme/context"
 import { usePermission } from "@/context/permission"
 import { useServerSDK } from "@/context/server-sdk"
 import { useServerSync } from "@/context/server-sync"
+import { useModels } from "@/context/models"
 import {
   monoDefault,
   monoFontFamily,
@@ -166,6 +167,31 @@ export function createSoundSettingsController() {
     ),
   }
 }
+
+export function createCommitModelSettingsController() {
+  const serverSync = useServerSync()
+  const models = useModels()
+
+  const current = createMemo(() => serverSync().data.config.commit_model ?? "")
+  const options = createMemo(() =>
+    models.list().map((model) => ({
+      id: `${model.provider.id}/${model.id}`,
+      name: model.name,
+      providerName: model.provider.name,
+    })),
+  )
+
+  return {
+    current,
+    options,
+    select: (model: string) => {
+      if (model === current()) return
+      void serverSync().updateConfig({ commit_model: model })
+    },
+  }
+}
+
+export type CommitModelSettingsController = ReturnType<typeof createCommitModelSettingsController>
 
 export type PermissionScopeController = ReturnType<typeof createPermissionScopeController>
 export type ShellSettingsController = ReturnType<typeof createShellSettingsController>

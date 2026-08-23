@@ -945,6 +945,8 @@ export const dict = {
     "เลือกเชลล์ที่จะใช้กับเทอร์มินัล เชลล์ที่เข้ากันได้จะใช้สำหรับการเรียกเครื่องมือของเอเจนต์ด้วย",
   "settings.general.row.shell.autoDefault": "อัตโนมัติ (ค่าเริ่มต้น)",
   "settings.general.row.shell.terminalOnly": "เทอร์มินัลเท่านั้น",
+  "settings.general.row.commitModel.title": "Commit message model",
+  "settings.general.row.commitModel.description": "Model used to generate commit messages",
   "settings.general.row.appearance.title": "รูปลักษณ์",
   "settings.general.row.appearance.description": "ปรับแต่งรูปลักษณ์ของ OpenCode บนอุปกรณ์ของคุณ",
   "settings.general.row.colorScheme.title": "โทนสี",

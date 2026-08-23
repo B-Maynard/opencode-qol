@@ -1277,6 +1277,8 @@ export const dict = {
     "Velg skallet som skal brukes i terminalen. Kompatible skall brukes også til agentens verktøykall.",
   "settings.general.row.shell.autoDefault": "Automatisk (standard)",
   "settings.general.row.shell.terminalOnly": "kun terminal",
+  "settings.general.row.commitModel.title": "Commit message model",
+  "settings.general.row.commitModel.description": "Model used to generate commit messages",
   "settings.general.row.showFileTree.title": "Filtre",
   "settings.general.row.showFileTree.description": "Vis filtrepanelet i sesjoner",
   "settings.general.row.showNavigation.title": "Navigasjonskontroller",

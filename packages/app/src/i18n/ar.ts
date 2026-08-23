@@ -890,6 +890,8 @@ export const dict = {
     "اختر shell المستخدم في المحطة الطرفية. تُستخدم واجهات shell المتوافقة أيضًا في استدعاءات أدوات الوكيل.",
   "settings.general.row.shell.autoDefault": "تلقائي (افتراضي)",
   "settings.general.row.shell.terminalOnly": "المحطة الطرفية فقط",
+  "settings.general.row.commitModel.title": "Commit message model",
+  "settings.general.row.commitModel.description": "Model used to generate commit messages",
   "settings.general.row.appearance.title": "المظهر",
   "settings.general.row.appearance.description": "تخصيص كيفية ظهور OpenCode على جهازك",
   "settings.general.row.colorScheme.title": "مخطط الألوان",

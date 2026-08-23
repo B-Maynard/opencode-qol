@@ -981,6 +981,8 @@ export const dict = {
   "settings.general.row.shell.description": "Shell được terminal và các công cụ của tác nhân sử dụng",
   "settings.general.row.shell.autoDefault": "Tự động (Mặc định)",
   "settings.general.row.shell.terminalOnly": "chỉ terminal",
+  "settings.general.row.commitModel.title": "Commit message model",
+  "settings.general.row.commitModel.description": "Model used to generate commit messages",
   "settings.general.row.appearance.title": "Giao diện",
   "settings.general.row.appearance.description": "Tùy chỉnh giao diện của OpenCode trên thiết bị",
   "settings.general.row.colorScheme.title": "Cách phối màu",

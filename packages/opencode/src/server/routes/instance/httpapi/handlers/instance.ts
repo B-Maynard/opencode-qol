@@ -1,5 +1,6 @@
 import { Agent } from "@/agent/agent"
 import { Command } from "@/command"
+import { Config } from "@/config/config"
 import * as InstanceState from "@/effect/instance-state"
 import { Format } from "@/format"
 import { Global } from "@opencode-ai/core/global"
@@ -26,6 +27,7 @@ export const instanceHandlers = HttpApiBuilder.group(InstanceHttpApi, "instance"
   Effect.gen(function* () {
     const agent = yield* Agent.Service
     const command = yield* Command.Service
+    const cfg = yield* Config.Service
     const format = yield* Format.Service
     const llm = yield* LLM.Service
     const lsp = yield* LSP.Service
@@ -117,18 +119,30 @@ export const instanceHandlers = HttpApiBuilder.group(InstanceHttpApi, "instance"
             data: { message: "No staged changes to summarize", reason: "nothing-to-commit" },
           })
         }
+        // Prefer explicitly configured commit_model, fall back to existing chain
+        const commitModelRef = yield* cfg.get().pipe(
+          Effect.map((config) => config.commit_model),
+          Effect.catch(() => Effect.succeed(undefined)),
+        )
+        const parsedCommitModel = commitModelRef ? Provider.parseModel(commitModelRef) : undefined
+        const explicitModel = parsedCommitModel
+          ? yield* provider.getModel(parsedCommitModel.providerID, parsedCommitModel.modelID).pipe(
+              Effect.catch(() => Effect.succeed(undefined)),
+            )
+          : undefined
+
         const defaultAgent = yield* agent.defaultInfo()
         const fallback = yield* provider.defaultModel().pipe(Effect.catch(() => Effect.succeed(undefined)))
-        if (!fallback) {
+        if (!explicitModel && !fallback) {
           return yield* new ApiVcsCommitMessageError({
             name: "VcsCommitMessageError",
             data: { message: "No LLM provider configured", reason: "no-model" },
           })
         }
-        const model = defaultAgent.model
+        const model = explicitModel ?? (defaultAgent.model
           ? yield* provider.getModel(defaultAgent.model.providerID, defaultAgent.model.modelID)
-          : (yield* provider.getSmallModel(fallback.providerID)) ??
-            (yield* provider.getModel(fallback.providerID, fallback.modelID))
+          : (yield* provider.getSmallModel(fallback!.providerID)) ??
+            (yield* provider.getModel(fallback!.providerID, fallback!.modelID)))
         const sessionID = SessionID.descending()
         const result = yield* llm
           .stream({

@@ -979,6 +979,8 @@ export const dict = {
   "settings.general.row.shell.description": "Terminal və agent alətləri tərəfindən istifadə edilən qabıq",
   "settings.general.row.shell.autoDefault": "Avtomatik (Standart)",
   "settings.general.row.shell.terminalOnly": "yalnız terminal",
+  "settings.general.row.commitModel.title": "Commit message model",
+  "settings.general.row.commitModel.description": "Model used to generate commit messages",
   "settings.general.row.appearance.title": "Görünüş",
   "settings.general.row.appearance.description": "OpenCode-un cihazınızda necə göründüyünü fərdiləşdirin",
   "settings.general.row.colorScheme.title": "Rəng sxemi",

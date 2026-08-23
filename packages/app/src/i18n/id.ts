@@ -1050,6 +1050,8 @@ export const dict = {
   "settings.general.row.shell.description": "Shell yang digunakan oleh terminal dan alat agen",
   "settings.general.row.shell.autoDefault": "Otomatis (Bawaan)",
   "settings.general.row.shell.terminalOnly": "hanya terminal",
+  "settings.general.row.commitModel.title": "Commit message model",
+  "settings.general.row.commitModel.description": "Model used to generate commit messages",
   "settings.general.row.appearance.title": "Tampilan",
   "settings.general.row.appearance.description": "Sesuaikan tampilan OpenCode di perangkat Anda",
   "settings.general.row.colorScheme.title": "Skema warna",

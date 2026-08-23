@@ -979,6 +979,8 @@ export const dict = {
   "settings.general.row.shell.description": "Shell gebruikt door de terminal- en agenttools",
   "settings.general.row.shell.autoDefault": "Automatisch (standaard)",
   "settings.general.row.shell.terminalOnly": "alleen terminal",
+  "settings.general.row.commitModel.title": "Commit message model",
+  "settings.general.row.commitModel.description": "Model used to generate commit messages",
   "settings.general.row.appearance.title": "Uiterlijk",
   "settings.general.row.appearance.description": "Pas aan hoe OpenCode eruitziet op je apparaat",
   "settings.general.row.colorScheme.title": "Kleurenschema",

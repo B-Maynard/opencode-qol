@@ -10,6 +10,7 @@ import { useTheme, type ColorScheme } from "@opencode-ai/ui/theme/context"
 import { useDialog } from "@opencode-ai/ui/context/dialog"
 import { useParams } from "@solidjs/router"
 import { useLanguage } from "@/context/language"
+import { useModels } from "@/context/models"
 import { usePermission } from "@/context/permission"
 import { usePlatform, type DisplayBackend } from "@/context/platform"
 import { useServerSync } from "@/context/server-sync"
@@ -85,6 +86,7 @@ const playDemoSound = (id: string | undefined) => {
 export const SettingsGeneral: Component = () => {
   const theme = useTheme()
   const language = useLanguage()
+  const models = useModels()
   const permission = usePermission()
   const platform = usePlatform()
   const dialog = useDialog()
@@ -187,6 +189,16 @@ export const SettingsGeneral: Component = () => {
 
     return options
   })
+
+  const commitModelDefault = { id: "", label: language.t("common.default") }
+  const commitModelOptions = createMemo(() => [
+    commitModelDefault,
+    ...models.list().map((model) => ({
+      id: `${model.provider.id}/${model.id}`,
+      label: `${model.name} (${model.provider.name})`,
+    })),
+  ])
+  const currentCommitModel = createMemo(() => serverSync().data.config.commit_model ?? "")
 
   const onDisplayBackendChange = (checked: boolean) => {
     const update = platform.setDisplayBackend?.(checked ? "wayland" : "auto")
@@ -344,6 +356,27 @@ export const SettingsGeneral: Component = () => {
             size="small"
             triggerVariant="settings"
             triggerStyle={{ "min-width": "180px" }}
+          />
+        </SettingsRow>
+
+        <SettingsRow
+          title={language.t("settings.general.row.commitModel.title")}
+          description={language.t("settings.general.row.commitModel.description")}
+        >
+          <Select
+            data-action="settings-commit-model"
+            options={commitModelOptions()}
+            current={commitModelOptions().find((option) => option.id === currentCommitModel()) ?? commitModelDefault}
+            value={(option) => option.id}
+            label={(option) => option.label}
+            onSelect={(option) => {
+              if (!option || option.id === currentCommitModel()) return
+              void serverSync().updateConfig({ commit_model: option.id })
+            }}
+            variant="secondary"
+            size="small"
+            triggerVariant="settings"
+            triggerStyle={{ "min-width": "220px" }}
           />
         </SettingsRow>
 

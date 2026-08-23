@@ -803,6 +803,7 @@
   display: flex;
   min-width: 0;
   flex: 1;
+  align-self: stretch;
   flex-direction: column;
   gap: 8px;
 }

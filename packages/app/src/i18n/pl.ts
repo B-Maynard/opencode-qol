@@ -894,6 +894,8 @@ export const dict = {
     "Wybierz powłokę używaną w terminalu. Zgodne powłoki są również używane przez wywołania narzędzi agenta.",
   "settings.general.row.shell.autoDefault": "Automatycznie (domyślna)",
   "settings.general.row.shell.terminalOnly": "tylko terminal",
+  "settings.general.row.commitModel.title": "Commit message model",
+  "settings.general.row.commitModel.description": "Model used to generate commit messages",
   "settings.general.row.appearance.title": "Wygląd",
   "settings.general.row.appearance.description": "Dostosuj wygląd OpenCode na swoim urządzeniu",
   "settings.general.row.colorScheme.title": "Schemat kolorów",

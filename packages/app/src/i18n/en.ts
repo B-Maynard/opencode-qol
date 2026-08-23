@@ -964,6 +964,8 @@ export const dict = {
   "settings.general.row.shell.description": "Shell used by the terminal and agent tools",
   "settings.general.row.shell.autoDefault": "Auto (Default)",
   "settings.general.row.shell.terminalOnly": "terminal only",
+  "settings.general.row.commitModel.title": "Commit message model",
+  "settings.general.row.commitModel.description": "Model used to generate commit messages",
   "settings.general.row.appearance.title": "Appearance",
   "settings.general.row.appearance.description": "Customise how OpenCode looks on your device",
   "settings.general.row.colorScheme.title": "Color scheme",
