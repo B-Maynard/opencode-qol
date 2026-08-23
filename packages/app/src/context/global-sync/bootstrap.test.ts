@@ -184,25 +184,7 @@ describe("bootstrapDirectory", () => {
 })
 
 describe("config queries", () => {
-  test("skips legacy global config for v2 servers", async () => {
-    const sdk = {
-      global: {
-        config: {
-          get: async () => {
-            throw new Error("legacy global config should not be called")
-          },
-        },
-      },
-    } as unknown as OpencodeClient
-
-    const result = await new QueryClient().fetchQuery(
-      loadGlobalConfigQuery(ServerScope.local, sdk, Promise.resolve("v2")),
-    )
-
-    expect(result).toEqual({})
-  })
-
-  test("loads legacy global config for v1 servers", async () => {
+  test("loads global config regardless of protocol", async () => {
     const calls: string[] = []
     const config = { shell: "zsh" } satisfies Config
     const sdk = {
@@ -216,9 +198,7 @@ describe("config queries", () => {
       },
     } as unknown as OpencodeClient
 
-    const result = await new QueryClient().fetchQuery(
-      loadGlobalConfigQuery(ServerScope.local, sdk, Promise.resolve("v1")),
-    )
+    const result = await new QueryClient().fetchQuery(loadGlobalConfigQuery(ServerScope.local, sdk))
 
     expect(result).toEqual(config)
     expect(calls).toEqual(["global"])
