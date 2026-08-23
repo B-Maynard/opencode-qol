@@ -2126,6 +2126,30 @@ export type Provider = {
   }
 }
 
+export type ConfigAgentFile = {
+  path: string
+  name: string
+  kind: "agent" | "mode"
+  content: string
+}
+
+export type UpdateAgentFile = {
+  path: string
+  content: string
+}
+
+export type AgentFileNotFound = {
+  name: "AgentFileNotFound"
+  data: {
+    path: string
+    message: string
+  }
+}
+
+export type EffectHttpApiErrorInternalServerError = {
+  _tag: "InternalServerError"
+}
+
 export type ExperimentalCapabilities = {
   backgroundSubagents: boolean
 }
@@ -2134,10 +2158,6 @@ export type ConsoleState = {
   consoleManagedProviders: Array<string>
   activeOrgName?: string
   switchableOrgCount: number
-}
-
-export type EffectHttpApiErrorInternalServerError = {
-  _tag: "InternalServerError"
 }
 
 export type ToolListItem = {
@@ -2308,7 +2328,7 @@ export type FileWriteError = {
   name: "FileWriteError"
   data: {
     message: string
-    reason: "path-out-of-scope" | "not-a-file" | "binary" | "too-large"
+    reason: "path-out-of-scope" | "not-a-file" | "binary" | "too-large" | "io-error"
   }
 }
 
@@ -7566,6 +7586,70 @@ export type ConfigProvidersResponses = {
 
 export type ConfigProvidersResponse = ConfigProvidersResponses[keyof ConfigProvidersResponses]
 
+export type ConfigAgentsData = {
+  body?: never
+  path?: never
+  query?: {
+    directory?: string
+    workspace?: string
+  }
+  url: "/config/agents"
+}
+
+export type ConfigAgentsErrors = {
+  /**
+   * Bad request
+   */
+  400: BadRequestError
+}
+
+export type ConfigAgentsError = ConfigAgentsErrors[keyof ConfigAgentsErrors]
+
+export type ConfigAgentsResponses = {
+  /**
+   * List of agent config files
+   */
+  200: Array<ConfigAgentFile>
+}
+
+export type ConfigAgentsResponse = ConfigAgentsResponses[keyof ConfigAgentsResponses]
+
+export type ConfigUpdateAgentsData = {
+  body?: UpdateAgentFile
+  path?: never
+  query?: {
+    directory?: string
+    workspace?: string
+  }
+  url: "/config/agents"
+}
+
+export type ConfigUpdateAgentsErrors = {
+  /**
+   * Bad request
+   */
+  400: BadRequestError
+  /**
+   * AgentFileNotFound
+   */
+  404: AgentFileNotFound
+  /**
+   * InternalServerError
+   */
+  500: EffectHttpApiErrorInternalServerError
+}
+
+export type ConfigUpdateAgentsError = ConfigUpdateAgentsErrors[keyof ConfigUpdateAgentsErrors]
+
+export type ConfigUpdateAgentsResponses = {
+  /**
+   * Updated agent config file
+   */
+  200: ConfigAgentFile
+}
+
+export type ConfigUpdateAgentsResponse = ConfigUpdateAgentsResponses[keyof ConfigUpdateAgentsResponses]
+
 export type ExperimentalCapabilitiesGetData = {
   body?: never
   path?: never
@@ -9883,6 +9967,39 @@ export type ProviderOauthCallbackResponses = {
 }
 
 export type ProviderOauthCallbackResponse = ProviderOauthCallbackResponses[keyof ProviderOauthCallbackResponses]
+
+export type ProviderFetchModelsData = {
+  body?: {
+    baseURL: string
+    apiKey: string
+  }
+  path?: never
+  query?: never
+  url: "/provider/fetch-models"
+}
+
+export type ProviderFetchModelsErrors = {
+  /**
+   * ProviderAuthError | InvalidRequestError
+   */
+  400: ProviderAuthError1 | InvalidRequestError
+}
+
+export type ProviderFetchModelsError = ProviderFetchModelsErrors[keyof ProviderFetchModelsErrors]
+
+export type ProviderFetchModelsResponses = {
+  /**
+   * List of available models
+   */
+  200: {
+    data: Array<{
+      id: string
+      name?: string
+    }>
+  }
+}
+
+export type ProviderFetchModelsResponse = ProviderFetchModelsResponses[keyof ProviderFetchModelsResponses]
 
 export type SessionListData = {
   body?: never

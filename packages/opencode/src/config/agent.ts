@@ -7,6 +7,43 @@ import { ConfigAgentV1 } from "@opencode-ai/core/v1/config/agent"
 import { configEntryNameFromPath } from "./entry-name"
 import * as ConfigMarkdown from "./markdown"
 import { ConfigParse } from "./parse"
+import { Filesystem } from "@/util/filesystem"
+
+export interface AgentFileEntry {
+  path: string // absolute path
+  name: string // derived from relative path
+  kind: "agent" | "mode"
+  content: string // raw markdown file content (frontmatter + body)
+}
+
+const agentFilePatterns = [
+  { pattern: "{agent,agents}/**/*.md", prefixes: ["agent/", "agents/"], kind: "agent" as const },
+  { pattern: "{mode,modes}/*.md", prefixes: ["mode/", "modes/"], kind: "mode" as const },
+]
+
+// Mirrors load/loadMode discovery but returns raw file entries (absolute path,
+// name, kind, and untouched markdown content) instead of parsed agent configs.
+export async function discoverAgentFiles(directories: string[]): Promise<AgentFileEntry[]> {
+  const entries: AgentFileEntry[] = []
+  for (const dir of directories) {
+    for (const { pattern, prefixes, kind } of agentFilePatterns) {
+      for (const item of await Glob.scan(pattern, { cwd: dir, absolute: true, dot: true, symlink: true })) {
+        entries.push({
+          path: item,
+          name: configEntryNameFromPath(path.relative(dir, item), prefixes),
+          kind,
+          content: await Filesystem.readText(item),
+        })
+      }
+    }
+  }
+  return entries
+}
+
+export async function isValidAgentPath(directories: string[], path: string): Promise<boolean> {
+  const entries = await discoverAgentFiles(directories)
+  return entries.some((entry) => entry.path === path)
+}
 
 export async function load(dir: string) {
   const result: Record<string, ConfigAgentV1.Info> = {}

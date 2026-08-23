@@ -1,6 +1,7 @@
 import { Config } from "@/config/config"
 import { ConfigV1 } from "@opencode-ai/core/v1/config/config"
 import { Provider } from "@/provider/provider"
+import { Schema } from "effect"
 import { HttpApi, HttpApiEndpoint, HttpApiError, HttpApiGroup, OpenApi } from "effect/unstable/httpapi"
 import { Authorization } from "../middleware/authorization"
 import { InstanceContextMiddleware } from "../middleware/instance-context"
@@ -8,6 +9,29 @@ import { WorkspaceRoutingMiddleware, WorkspaceRoutingQuery } from "../middleware
 import { described } from "./metadata"
 
 const root = "/config"
+
+export const AgentFileEntry = Schema.Struct({
+  path: Schema.String,
+  name: Schema.String,
+  kind: Schema.Literals(["agent", "mode"]),
+  content: Schema.String,
+}).annotate({ identifier: "ConfigAgentFile" })
+
+export const UpdateAgentFile = Schema.Struct({
+  path: Schema.String,
+  content: Schema.String,
+}).annotate({ identifier: "UpdateAgentFile" })
+
+export class AgentFileNotFoundError extends Schema.ErrorClass<AgentFileNotFoundError>("AgentFileNotFound")(
+  {
+    name: Schema.Literal("AgentFileNotFound"),
+    data: Schema.Struct({
+      path: Schema.String,
+      message: Schema.String,
+    }),
+  },
+  { httpApiStatus: 404 },
+) {}
 
 export const ConfigApi = HttpApi.make("config")
   .add(
@@ -43,6 +67,28 @@ export const ConfigApi = HttpApi.make("config")
             identifier: "config.providers",
             summary: "List config providers",
             description: "Get a list of all configured AI providers and their default models.",
+          }),
+        ),
+        HttpApiEndpoint.get("agents", `${root}/agents`, {
+          query: WorkspaceRoutingQuery,
+          success: described(Schema.Array(AgentFileEntry), "List of agent config files"),
+        }).annotateMerge(
+          OpenApi.annotations({
+            identifier: "config.agents",
+            summary: "List agent config files",
+            description: "List all agent and mode markdown files found in the config directories.",
+          }),
+        ),
+        HttpApiEndpoint.put("updateAgents", `${root}/agents`, {
+          query: WorkspaceRoutingQuery,
+          payload: UpdateAgentFile,
+          success: described(AgentFileEntry, "Updated agent config file"),
+          error: [AgentFileNotFoundError, HttpApiError.InternalServerError],
+        }).annotateMerge(
+          OpenApi.annotations({
+            identifier: "config.updateAgents",
+            summary: "Update agent config file",
+            description: "Overwrite the contents of an existing agent or mode markdown file.",
           }),
         ),
       )

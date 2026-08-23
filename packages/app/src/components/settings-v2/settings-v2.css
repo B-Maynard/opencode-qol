@@ -727,3 +727,144 @@
   line-height: 1;
   color: var(--v2-state-fg-danger);
 }
+
+.settings-v2-tab-header.settings-v2-agents-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 24px;
+}
+
+.settings-v2-panel.settings-v2-agents-panel {
+  overflow: hidden;
+}
+
+.settings-v2-tab-body.settings-v2-agents {
+  flex: 1;
+  min-height: 0;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 16px;
+  padding-top: 0;
+}
+
+.settings-v2-agents-list {
+  display: flex;
+  width: 200px;
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.settings-v2-agents-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 440;
+  line-height: 1;
+  color: var(--v2-text-text-muted);
+  cursor: pointer;
+  text-align: start;
+}
+
+.settings-v2-agents-row:hover {
+  background-color: var(--v2-background-bg-layer-02);
+}
+
+.settings-v2-agents-row--active {
+  background-color: var(--v2-background-bg-layer-02);
+  color: var(--v2-text-text-base);
+}
+
+.settings-v2-agents-row-name {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.settings-v2-agents-row-dirty {
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background-color: var(--v2-state-fg-warning);
+}
+
+.settings-v2-agents-editor {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settings-v2-agents-editor-title {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 530;
+  line-height: 1;
+  color: var(--v2-text-text-base);
+}
+
+.settings-v2-agents-editor .settings-v2-agents-editor-area {
+  flex: 1;
+  min-height: 0;
+  align-self: stretch;
+  width: auto;
+}
+
+@media (max-width: 639px) {
+  .settings-v2-tab-body.settings-v2-agents {
+    flex-direction: column;
+  }
+
+  .settings-v2-agents-list {
+    width: 100%;
+    flex-shrink: 1;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 4px;
+    overflow-y: visible;
+    overflow-x: auto;
+    max-height: 120px;
+  }
+
+  .settings-v2-agents-row {
+    width: auto;
+    padding: 6px 10px;
+  }
+}
+
+.settings-v2-agents-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding-block: 48px;
+  font-size: 13px;
+  font-weight: 440;
+  line-height: 1;
+  color: var(--v2-text-text-muted);
+  text-align: center;
+}
+
+.settings-v2-agents-unsaved-copy {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 440;
+  line-height: 20px;
+  color: var(--v2-text-text-muted);
+}

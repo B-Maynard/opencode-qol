@@ -452,7 +452,7 @@ export function SessionSidePanel(props: {
                               <Show when={gitOpen()} fallback={props.reviewPanel()}>
                                 <GitPanel
                                   files={diffs}
-                                  onSelectFile={props.focusReviewDiff}
+                                  onSelectFile={(path) => { setGitOpen(false); props.focusReviewDiff(path) }}
                                   staged={props.staged}
                                   onStage={props.onStage}
                                   onUnstage={props.onUnstage}
@@ -650,7 +650,7 @@ export function SessionSidePanel(props: {
                             <Show when={gitOpen()} fallback={props.reviewPanel()}>
                               <GitPanel
                                 files={diffs}
-                                onSelectFile={props.focusReviewDiff}
+                                onSelectFile={(path) => { setGitOpen(false); props.focusReviewDiff(path) }}
                                 staged={props.staged}
                                 onStage={props.onStage}
                                 onUnstage={props.onUnstage}

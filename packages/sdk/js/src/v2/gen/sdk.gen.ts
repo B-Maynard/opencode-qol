@@ -18,10 +18,14 @@ import type {
   CommandListErrors,
   CommandListResponses,
   Config as Config3,
+  ConfigAgentsErrors,
+  ConfigAgentsResponses,
   ConfigGetErrors,
   ConfigGetResponses,
   ConfigProvidersErrors,
   ConfigProvidersResponses,
+  ConfigUpdateAgentsErrors,
+  ConfigUpdateAgentsResponses,
   ConfigUpdateErrors,
   ConfigUpdateResponses,
   EventSubscribeResponses,
@@ -153,6 +157,8 @@ import type {
   PromptInput,
   ProviderAuthErrors,
   ProviderAuthResponses,
+  ProviderFetchModelsErrors,
+  ProviderFetchModelsResponses,
   ProviderListErrors,
   ProviderListResponses,
   ProviderOauthAuthorizeErrors,
@@ -271,6 +277,7 @@ import type {
   TuiShowToastResponses,
   TuiSubmitPromptErrors,
   TuiSubmitPromptResponses,
+  UpdateAgentFile,
   V2AgentListErrors,
   V2AgentListResponses,
   V2CommandListErrors,
@@ -1533,6 +1540,73 @@ export class Config2 extends HeyApiClient {
       url: "/config/providers",
       ...options,
       ...params,
+    })
+  }
+
+  /**
+   * List agent config files
+   *
+   * List all agent and mode markdown files found in the config directories.
+   */
+  public agents<ThrowOnError extends boolean = false>(
+    parameters?: {
+      directory?: string
+      workspace?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "query", key: "directory" },
+            { in: "query", key: "workspace" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).get<ConfigAgentsResponses, ConfigAgentsErrors, ThrowOnError>({
+      url: "/config/agents",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Update agent config file
+   *
+   * Overwrite the contents of an existing agent or mode markdown file.
+   */
+  public updateAgents<ThrowOnError extends boolean = false>(
+    parameters?: {
+      directory?: string
+      workspace?: string
+      updateAgentFile?: UpdateAgentFile
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "query", key: "directory" },
+            { in: "query", key: "workspace" },
+            { key: "updateAgentFile", map: "body" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).put<ConfigUpdateAgentsResponses, ConfigUpdateAgentsErrors, ThrowOnError>({
+      url: "/config/agents",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
     })
   }
 }
@@ -3810,6 +3884,43 @@ export class Provider extends HeyApiClient {
       ...options,
       ...params,
     })
+  }
+
+  /**
+   * Fetch models from provider
+   *
+   * Fetch available models from an OpenAI-compatible provider endpoint.
+   */
+  public fetchModels<ThrowOnError extends boolean = false>(
+    parameters?: {
+      baseURL?: string
+      apiKey?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "body", key: "baseURL" },
+            { in: "body", key: "apiKey" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<ProviderFetchModelsResponses, ProviderFetchModelsErrors, ThrowOnError>(
+      {
+        url: "/provider/fetch-models",
+        ...options,
+        ...params,
+        headers: {
+          "Content-Type": "application/json",
+          ...options?.headers,
+          ...params.headers,
+        },
+      },
+    )
   }
 
   private _oauth?: Oauth

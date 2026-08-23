@@ -162,6 +162,55 @@ const scenarios: Scenario[] = [
     .at((ctx) => ({ path: "/config", headers: ctx.headers(), body: { username: 1 } }))
     .status(400),
   http.protected.get("/config/providers", "config.providers").json(),
+  http.protected
+    .get("/config/agents", "config.agents")
+    .seeded(() =>
+      Effect.promise(() =>
+        Bun.write(
+          path.join(exerciseConfigDirectory, "agent", "httpapi-test.md"),
+          "---\ndescription: HttpApi exercise agent\n---\n\nTest body.\n",
+        ),
+      ),
+    )
+    .json(200, (body) => {
+      array(body)
+      check(
+        body.some((item) => isRecord(item) && item.name === "httpapi-test" && item.kind === "agent"),
+        "config.agents should list the seeded agent file",
+      )
+    }),
+  http.protected
+    .put("/config/agents", "config.updateAgents")
+    .seeded(() =>
+      Effect.promise(() =>
+        Bun.write(
+          path.join(exerciseConfigDirectory, "agent", "httpapi-test.md"),
+          "---\ndescription: HttpApi exercise agent\n---\n\nTest body.\n",
+        ),
+      ),
+    )
+    .at(() => ({
+      path: "/config/agents",
+      body: {
+        path: path.join(exerciseConfigDirectory, "agent", "httpapi-test.md"),
+        content: "---\ndescription: Updated exercise agent\n---\n\nUpdated body.\n",
+      },
+    }))
+    .mutating()
+    .jsonEffect(
+      200,
+      (body) =>
+        Effect.gen(function* () {
+          object(body)
+          check(body.kind === "agent", "updated entry should keep agent kind")
+          check(body.name === "httpapi-test", "updated entry should keep derived name")
+          check((body.content as string).includes("Updated body"), "updated entry should return new content")
+          const text = yield* Effect.promise(() =>
+            Bun.file(path.join(exerciseConfigDirectory, "agent", "httpapi-test.md")).text(),
+          )
+          check(text.includes("Updated body"), "agent file should be overwritten with new content")
+        }),
+    ),
   http.protected.get("/project", "project.list").json(200, array, "status"),
   http.protected.get("/project/current", "project.current").json(
     200,
